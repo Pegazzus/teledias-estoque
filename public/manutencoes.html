@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manutenções - Sistema de Estoque | Teledias Telecom</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+
+<body>
+    <div class="app-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <div class="sidebar-logo">
+                    <div class="sidebar-logo-icon">📻</div>
+                    <div class="sidebar-logo-text">
+                        <h2>Teledias</h2>
+                        <span>Sistema de Estoque</span>
+                    </div>
+                </div>
+            </div>
+
+            <nav class="sidebar-nav">
+                <div class="nav-section">
+                    <div class="nav-section-title">Menu Principal</div>
+                    <a href="dashboard.html" class="nav-link">
+                        <span class="nav-link-icon">📊</span>
+                        Dashboard
+                    </a>
+                    <a href="radios.html" class="nav-link">
+                        <span class="nav-link-icon">📻</span>
+                        Rádios
+                    </a>
+                    <a href="clientes.html" class="nav-link">
+                        <span class="nav-link-icon">👥</span>
+                        Clientes
+                    </a>
+                    <a href="movimentacoes.html" class="nav-link">
+                        <span class="nav-link-icon">🔄</span>
+                        Movimentações
+                    </a>
+                </div>
+
+                <div class="nav-section">
+                    <div class="nav-section-title">Manutenção</div>
+                    <a href="manutencoes.html" class="nav-link">
+                        <span class="nav-link-icon">🔧</span>
+                        Manutenções
+                    </a>
+                </div>
+            </nav>
+
+            <div class="sidebar-footer">
+                <div class="user-info">
+                    <div class="user-avatar">A</div>
+                    <div class="user-details">
+                        <div class="user-name">Administrador</div>
+                        <div class="user-role">Admin</div>
+                    </div>
+                    <button class="btn-logout" onclick="logout()" title="Sair">🚪</button>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <header class="header">
+                <div class="header-title">
+                    <h1>Gestão de Manutenções</h1>
+                </div>
+            </header>
+
+            <div class="page-content">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Manutenções</h3>
+                        <div class="card-actions">
+                            <div class="filter-bar">
+                                <select id="filterStatus" class="form-control" onchange="loadManutencoes()">
+                                    <option value="">Todos os status</option>
+                                    <option value="pendente">Pendentes</option>
+                                    <option value="em_andamento">Em Andamento</option>
+                                    <option value="concluida">Concluídas</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-container">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Rádio</th>
+                                        <th>Modelo</th>
+                                        <th>Descrição</th>
+                                        <th>Status</th>
+                                        <th>Entrada</th>
+                                        <th>Conclusão</th>
+                                        <th>Custo</th>
+                                        <th>Ações</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="manutencoesTableBody">
+                                    <tr>
+                                        <td colspan="8">
+                                            <div class="empty-state">
+                                                <p>Carregando...</p>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Modal Concluir -->
+    <div id="concluirModal" class="modal-overlay">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 class="modal-title">Concluir Manutenção</h3>
+                <button class="modal-close" onclick="closeModal()">✕</button>
+            </div>
+            <div class="modal-body">
+                <form id="concluirForm">
+                    <input type="hidden" id="manutencaoId">
+                    <div class="form-group">
+                        <label class="form-label">Custo (R$)</label>
+                        <input type="number" id="custo" class="form-control" step="0.01" min="0" placeholder="0.00">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Observações</label>
+                        <textarea id="observacoes" class="form-control" rows="3"
+                            placeholder="Detalhes do serviço realizado..."></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" onclick="closeModal()">Cancelar</button>
+                <button class="btn btn-success" onclick="concluirManutencao()">Concluir</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/auth.js"></script>
+    <script>
+        if (!requireAuth()) throw new Error('Não autenticado');
+        initUserInfo();
+        setActiveNav();
+
+        async function loadManutencoes() {
+            try {
+                const status = document.getElementById('filterStatus').value;
+                let url = '/api/movimentacoes/manutencoes';
+                if (status) url += `?status=${status}`;
+
+                const response = await fetchApi(url);
+                const manutencoes = await response.json();
+
+                const tbody = document.getElementById('manutencoesTableBody');
+
+                if (manutencoes.length === 0) {
+                    tbody.innerHTML = `
+                        <tr>
+                            <td colspan="8">
+                                <div class="empty-state">
+                                    <div class="empty-state-icon">🔧</div>
+                                    <h3>Nenhuma manutenção encontrada</h3>
+                                    <p>Envie rádios para manutenção através da página de rádios.</p>
+                                </div>
+                            </td>
+                        </tr>
+                    `;
+                    return;
+                }
+
+                tbody.innerHTML = manutencoes.map(m => `
+                    <tr>
+                        <td><strong>${m.radio_codigo}</strong></td>
+                        <td>${m.radio_modelo}</td>
+                        <td>${m.descricao}</td>
+                        <td>${getStatusBadge(m.status)}</td>
+                        <td>${formatDate(m.data_entrada)}</td>
+                        <td>${m.data_conclusao ? formatDate(m.data_conclusao) : '-'}</td>
+                        <td>${m.custo ? `R$ ${parseFloat(m.custo).toFixed(2)}` : '-'}</td>
+                        <td>
+                            <div class="action-btns">
+                                ${m.status !== 'concluida' ? `
+                                    ${m.status === 'pendente' ? `
+                                        <button class="btn btn-warning btn-sm" onclick="iniciarManutencao(${m.id})" title="Iniciar">▶️</button>
+                                    ` : ''}
+                                    <button class="btn btn-success btn-sm" onclick="openConcluirModal(${m.id})" title="Concluir">✅</button>
+                                ` : ''}
+                            </div>
+                        </td>
+                    </tr>
+                `).join('');
+            } catch (error) {
+                showToast('Erro ao carregar manutenções', 'error');
+            }
+        }
+
+        async function iniciarManutencao(id) {
+            try {
+                const response = await fetchApi(`/api/movimentacoes/manutencoes/${id}`, {
+                    method: 'PUT',
+                    body: JSON.stringify({ status: 'em_andamento' })
+                });
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.error);
+                }
+
+                showToast('Manutenção iniciada!', 'success');
+                loadManutencoes();
+            } catch (error) {
+                showToast(error.message, 'error');
+            }
+        }
+
+        function openConcluirModal(id) {
+            document.getElementById('manutencaoId').value = id;
+            document.getElementById('custo').value = '';
+            document.getElementById('observacoes').value = '';
+            document.getElementById('concluirModal').classList.add('active');
+        }
+
+        function closeModal() {
+            document.getElementById('concluirModal').classList.remove('active');
+        }
+
+        async function concluirManutencao() {
+            const id = document.getElementById('manutencaoId').value;
+            const custo = document.getElementById('custo').value;
+            const observacoes = document.getElementById('observacoes').value;
+
+            try {
+                const response = await fetchApi('/api/movimentacoes/concluir-manutencao', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        manutencao_id: parseInt(id),
+                        custo: custo ? parseFloat(custo) : null,
+                        observacoes
+                    })
+                });
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.error);
+                }
+
+                showToast('Manutenção concluída! Rádio retornou ao estoque.', 'success');
+                closeModal();
+                loadManutencoes();
+            } catch (error) {
+                showToast(error.message, 'error');
+            }
+        }
+
+        // Inicializar
+        loadManutencoes();
+    </script>
+</body>
+
+</html>

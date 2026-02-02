@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Clientes - Sistema de Estoque | Teledias Telecom</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+
+<body>
+    <div class="app-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <div class="sidebar-logo">
+                    <div class="sidebar-logo-icon">📻</div>
+                    <div class="sidebar-logo-text">
+                        <h2>Teledias</h2>
+                        <span>Sistema de Estoque</span>
+                    </div>
+                </div>
+            </div>
+
+            <nav class="sidebar-nav">
+                <div class="nav-section">
+                    <div class="nav-section-title">Menu Principal</div>
+                    <a href="dashboard.html" class="nav-link">
+                        <span class="nav-link-icon">📊</span>
+                        Dashboard
+                    </a>
+                    <a href="radios.html" class="nav-link">
+                        <span class="nav-link-icon">📻</span>
+                        Rádios
+                    </a>
+                    <a href="clientes.html" class="nav-link">
+                        <span class="nav-link-icon">👥</span>
+                        Clientes
+                    </a>
+                    <a href="movimentacoes.html" class="nav-link">
+                        <span class="nav-link-icon">🔄</span>
+                        Movimentações
+                    </a>
+                </div>
+
+                <div class="nav-section">
+                    <div class="nav-section-title">Manutenção</div>
+                    <a href="manutencoes.html" class="nav-link">
+                        <span class="nav-link-icon">🔧</span>
+                        Manutenções
+                    </a>
+                </div>
+            </nav>
+
+            <div class="sidebar-footer">
+                <div class="user-info">
+                    <div class="user-avatar">A</div>
+                    <div class="user-details">
+                        <div class="user-name">Administrador</div>
+                        <div class="user-role">Admin</div>
+                    </div>
+                    <button class="btn-logout" onclick="logout()" title="Sair">🚪</button>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <header class="header">
+                <div class="header-title">
+                    <h1>Gestão de Clientes</h1>
+                </div>
+            </header>
+
+            <div class="page-content">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Clientes Cadastrados</h3>
+                        <div class="card-actions">
+                            <input type="text" id="searchCliente" class="form-control" placeholder="Buscar cliente..."
+                                onkeyup="loadClientes()">
+                            <button class="btn btn-primary" onclick="openModal('add')">
+                                ➕ Novo Cliente
+                            </button>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-container">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Nome</th>
+                                        <th>CNPJ/CPF</th>
+                                        <th>Telefone</th>
+                                        <th>Email</th>
+                                        <th>Rádios</th>
+                                        <th>Ações</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="clientesTableBody">
+                                    <tr>
+                                        <td colspan="6">
+                                            <div class="empty-state">
+                                                <p>Carregando...</p>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Modal Cliente -->
+    <div id="clienteModal" class="modal-overlay">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 class="modal-title" id="modalTitle">Novo Cliente</h3>
+                <button class="modal-close" onclick="closeModal()">✕</button>
+            </div>
+            <div class="modal-body">
+                <form id="clienteForm">
+                    <input type="hidden" id="clienteId">
+                    <div class="form-group">
+                        <label class="form-label">Nome / Razão Social *</label>
+                        <input type="text" id="nome" class="form-control" required placeholder="Nome do cliente">
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">CNPJ / CPF</label>
+                            <input type="text" id="cnpj_cpf" class="form-control" placeholder="00.000.000/0000-00">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Telefone</label>
+                            <input type="text" id="telefone" class="form-control" placeholder="(00) 00000-0000">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Email</label>
+                        <input type="email" id="email" class="form-control" placeholder="email@exemplo.com">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Endereço</label>
+                        <textarea id="endereco" class="form-control" rows="2"
+                            placeholder="Endereço completo"></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" onclick="closeModal()">Cancelar</button>
+                <button class="btn btn-primary" onclick="saveCliente()">Salvar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Detalhes -->
+    <div id="detalhesModal" class="modal-overlay">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 class="modal-title">Detalhes do Cliente</h3>
+                <button class="modal-close" onclick="closeDetalhesModal()">✕</button>
+            </div>
+            <div class="modal-body" id="detalhesContent">
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" onclick="closeDetalhesModal()">Fechar</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/auth.js"></script>
+    <script>
+        if (!requireAuth()) throw new Error('Não autenticado');
+        initUserInfo();
+        setActiveNav();
+
+        // Carregar clientes
+        async function loadClientes() {
+            try {
+                const busca = document.getElementById('searchCliente').value;
+                let url = '/api/clientes';
+                if (busca) url += `?busca=${encodeURIComponent(busca)}`;
+
+                const response = await fetchApi(url);
+                const clientes = await response.json();
+
+                const tbody = document.getElementById('clientesTableBody');
+
+                if (clientes.length === 0) {
+                    tbody.innerHTML = `
+                        <tr>
+                            <td colspan="6">
+                                <div class="empty-state">
+                                    <div class="empty-state-icon">👥</div>
+                                    <h3>Nenhum cliente encontrado</h3>
+                                    <p>Cadastre seu primeiro cliente clicando no botão acima.</p>
+                                </div>
+                            </td>
+                        </tr>
+                    `;
+                    return;
+                }
+
+                tbody.innerHTML = clientes.map(cliente => `
+                    <tr>
+                        <td><strong>${cliente.nome}</strong></td>
+                        <td>${cliente.cnpj_cpf || '-'}</td>
+                        <td>${cliente.telefone || '-'}</td>
+                        <td>${cliente.email || '-'}</td>
+                        <td>
+                            <button class="btn btn-outline btn-sm" onclick="verDetalhes(${cliente.id})">
+                                Ver rádios
+                            </button>
+                        </td>
+                        <td>
+                            <div class="action-btns">
+                                <button class="btn btn-outline btn-sm" onclick="openModal('edit', ${cliente.id})" title="Editar">✏️</button>
+                                <button class="btn btn-danger btn-sm" onclick="deleteCliente(${cliente.id})" title="Excluir">🗑️</button>
+                            </div>
+                        </td>
+                    </tr>
+                `).join('');
+            } catch (error) {
+                showToast('Erro ao carregar clientes', 'error');
+            }
+        }
+
+        // Modal
+        function openModal(mode, id = null) {
+            const modal = document.getElementById('clienteModal');
+            const title = document.getElementById('modalTitle');
+            const form = document.getElementById('clienteForm');
+
+            form.reset();
+            document.getElementById('clienteId').value = '';
+
+            if (mode === 'edit' && id) {
+                title.textContent = 'Editar Cliente';
+                loadClienteData(id);
+            } else {
+                title.textContent = 'Novo Cliente';
+            }
+
+            modal.classList.add('active');
+        }
+
+        function closeModal() {
+            document.getElementById('clienteModal').classList.remove('active');
+        }
+
+        async function loadClienteData(id) {
+            try {
+                const response = await fetchApi(`/api/clientes/${id}`);
+                const cliente = await response.json();
+
+                document.getElementById('clienteId').value = cliente.id;
+                document.getElementById('nome').value = cliente.nome;
+                document.getElementById('cnpj_cpf').value = cliente.cnpj_cpf || '';
+                document.getElementById('telefone').value = cliente.telefone || '';
+                document.getElementById('email').value = cliente.email || '';
+                document.getElementById('endereco').value = cliente.endereco || '';
+            } catch (error) {
+                showToast('Erro ao carregar dados do cliente', 'error');
+            }
+        }
+
+        async function saveCliente() {
+            const id = document.getElementById('clienteId').value;
+            const data = {
+                nome: document.getElementById('nome').value,
+                cnpj_cpf: document.getElementById('cnpj_cpf').value,
+                telefone: document.getElementById('telefone').value,
+                email: document.getElementById('email').value,
+                endereco: document.getElementById('endereco').value
+            };
+
+            if (!data.nome) {
+                showToast('Nome é obrigatório', 'warning');
+                return;
+            }
+
+            try {
+                const url = id ? `/api/clientes/${id}` : '/api/clientes';
+                const method = id ? 'PUT' : 'POST';
+
+                const response = await fetchApi(url, {
+                    method,
+                    body: JSON.stringify(data)
+                });
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.error);
+                }
+
+                showToast(id ? 'Cliente atualizado!' : 'Cliente cadastrado!', 'success');
+                closeModal();
+                loadClientes();
+            } catch (error) {
+                showToast(error.message, 'error');
+            }
+        }
+
+        async function deleteCliente(id) {
+            if (!confirm('Deseja realmente excluir este cliente?')) return;
+
+            try {
+                const response = await fetchApi(`/api/clientes/${id}`, { method: 'DELETE' });
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.error);
+                }
+
+                showToast('Cliente excluído!', 'success');
+                loadClientes();
+            } catch (error) {
+                showToast(error.message, 'error');
+            }
+        }
+
+        // Detalhes
+        async function verDetalhes(id) {
+            try {
+                const response = await fetchApi(`/api/clientes/${id}`);
+                const cliente = await response.json();
+
+                let radiosHtml = '<p>Nenhum rádio alocado</p>';
+                if (cliente.radios && cliente.radios.length > 0) {
+                    radiosHtml = `
+                        <table style="width:100%">
+                            <thead>
+                                <tr>
+                                    <th>Código</th>
+                                    <th>Modelo</th>
+                                    <th>Marca</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${cliente.radios.map(r => `
+                                    <tr>
+                                        <td>${r.codigo}</td>
+                                        <td>${r.modelo}</td>
+                                        <td>${r.marca || '-'}</td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    `;
+                }
+
+                document.getElementById('detalhesContent').innerHTML = `
+                    <h4 style="margin-bottom:0.5rem">${cliente.nome}</h4>
+                    <p style="color:var(--gray-500);margin-bottom:1rem">${cliente.cnpj_cpf || ''}</p>
+                    <h5 style="margin-bottom:0.5rem">Rádios com este cliente:</h5>
+                    ${radiosHtml}
+                `;
+
+                document.getElementById('detalhesModal').classList.add('active');
+            } catch (error) {
+                showToast('Erro ao carregar detalhes', 'error');
+            }
+        }
+
+        function closeDetalhesModal() {
+            document.getElementById('detalhesModal').classList.remove('active');
+        }
+
+        // Inicializar
+        loadClientes();
+    </script>
+</body>
+
+</html>

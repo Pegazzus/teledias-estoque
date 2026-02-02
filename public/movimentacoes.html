@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Movimentações - Sistema de Estoque | Teledias Telecom</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+
+<body>
+    <div class="app-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <div class="sidebar-logo">
+                    <div class="sidebar-logo-icon">📻</div>
+                    <div class="sidebar-logo-text">
+                        <h2>Teledias</h2>
+                        <span>Sistema de Estoque</span>
+                    </div>
+                </div>
+            </div>
+
+            <nav class="sidebar-nav">
+                <div class="nav-section">
+                    <div class="nav-section-title">Menu Principal</div>
+                    <a href="dashboard.html" class="nav-link">
+                        <span class="nav-link-icon">📊</span>
+                        Dashboard
+                    </a>
+                    <a href="radios.html" class="nav-link">
+                        <span class="nav-link-icon">📻</span>
+                        Rádios
+                    </a>
+                    <a href="clientes.html" class="nav-link">
+                        <span class="nav-link-icon">👥</span>
+                        Clientes
+                    </a>
+                    <a href="movimentacoes.html" class="nav-link">
+                        <span class="nav-link-icon">🔄</span>
+                        Movimentações
+                    </a>
+                </div>
+
+                <div class="nav-section">
+                    <div class="nav-section-title">Manutenção</div>
+                    <a href="manutencoes.html" class="nav-link">
+                        <span class="nav-link-icon">🔧</span>
+                        Manutenções
+                    </a>
+                </div>
+            </nav>
+
+            <div class="sidebar-footer">
+                <div class="user-info">
+                    <div class="user-avatar">A</div>
+                    <div class="user-details">
+                        <div class="user-name">Administrador</div>
+                        <div class="user-role">Admin</div>
+                    </div>
+                    <button class="btn-logout" onclick="logout()" title="Sair">🚪</button>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <header class="header">
+                <div class="header-title">
+                    <h1>Histórico de Movimentações</h1>
+                </div>
+            </header>
+
+            <div class="page-content">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Movimentações</h3>
+                        <div class="card-actions">
+                            <div class="filter-bar">
+                                <select id="filterTipo" class="form-control" onchange="loadMovimentacoes()">
+                                    <option value="">Todos os tipos</option>
+                                    <option value="saida">Saídas</option>
+                                    <option value="retorno">Retornos</option>
+                                    <option value="manutencao">Manutenções</option>
+                                    <option value="retorno_manutencao">Ret. Manutenção</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-container">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Data</th>
+                                        <th>Tipo</th>
+                                        <th>Rádio</th>
+                                        <th>Modelo</th>
+                                        <th>Cliente</th>
+                                        <th>Usuário</th>
+                                        <th>Observações</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="movimentacoesTableBody">
+                                    <tr>
+                                        <td colspan="7">
+                                            <div class="empty-state">
+                                                <p>Carregando...</p>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="js/auth.js"></script>
+    <script>
+        if (!requireAuth()) throw new Error('Não autenticado');
+        initUserInfo();
+        setActiveNav();
+
+        const tipoMap = {
+            'saida': { label: 'Saída', class: 'badge-cliente' },
+            'retorno': { label: 'Retorno', class: 'badge-estoque' },
+            'manutencao': { label: 'Manutenção', class: 'badge-manutencao' },
+            'retorno_manutencao': { label: 'Ret. Manutenção', class: 'badge-estoque' }
+        };
+
+        async function loadMovimentacoes() {
+            try {
+                const tipo = document.getElementById('filterTipo').value;
+                let url = '/api/movimentacoes';
+                if (tipo) url += `?tipo=${tipo}`;
+
+                const response = await fetchApi(url);
+                const movimentacoes = await response.json();
+
+                const tbody = document.getElementById('movimentacoesTableBody');
+
+                if (movimentacoes.length === 0) {
+                    tbody.innerHTML = `
+                        <tr>
+                            <td colspan="7">
+                                <div class="empty-state">
+                                    <div class="empty-state-icon">🔄</div>
+                                    <h3>Nenhuma movimentação encontrada</h3>
+                                    <p>O histórico de movimentações aparecerá aqui.</p>
+                                </div>
+                            </td>
+                        </tr>
+                    `;
+                    return;
+                }
+
+                tbody.innerHTML = movimentacoes.map(mov => {
+                    const tipoInfo = tipoMap[mov.tipo] || { label: mov.tipo, class: '' };
+                    return `
+                        <tr>
+                            <td>${formatDate(mov.created_at)}</td>
+                            <td><span class="badge ${tipoInfo.class}">${tipoInfo.label}</span></td>
+                            <td><strong>${mov.radio_codigo}</strong></td>
+                            <td>${mov.radio_modelo}</td>
+                            <td>${mov.cliente_nome || '-'}</td>
+                            <td>${mov.usuario_nome || '-'}</td>
+                            <td>${mov.observacoes || '-'}</td>
+                        </tr>
+                    `;
+                }).join('');
+            } catch (error) {
+                showToast('Erro ao carregar movimentações', 'error');
+            }
+        }
+
+        // Inicializar
+        loadMovimentacoes();
+    </script>
+</body>
+
+</html>

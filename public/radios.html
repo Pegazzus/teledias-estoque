@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rádios - Sistema de Estoque | Teledias Telecom</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+
+<body>
+    <div class="app-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <div class="sidebar-logo">
+                    <div class="sidebar-logo-icon">📻</div>
+                    <div class="sidebar-logo-text">
+                        <h2>Teledias</h2>
+                        <span>Sistema de Estoque</span>
+                    </div>
+                </div>
+            </div>
+
+            <nav class="sidebar-nav">
+                <div class="nav-section">
+                    <div class="nav-section-title">Menu Principal</div>
+                    <a href="dashboard.html" class="nav-link">
+                        <span class="nav-link-icon">📊</span>
+                        Dashboard
+                    </a>
+                    <a href="radios.html" class="nav-link">
+                        <span class="nav-link-icon">📻</span>
+                        Rádios
+                    </a>
+                    <a href="clientes.html" class="nav-link">
+                        <span class="nav-link-icon">👥</span>
+                        Clientes
+                    </a>
+                    <a href="movimentacoes.html" class="nav-link">
+                        <span class="nav-link-icon">🔄</span>
+                        Movimentações
+                    </a>
+                </div>
+
+                <div class="nav-section">
+                    <div class="nav-section-title">Manutenção</div>
+                    <a href="manutencoes.html" class="nav-link">
+                        <span class="nav-link-icon">🔧</span>
+                        Manutenções
+                    </a>
+                </div>
+            </nav>
+
+            <div class="sidebar-footer">
+                <div class="user-info">
+                    <div class="user-avatar">A</div>
+                    <div class="user-details">
+                        <div class="user-name">Administrador</div>
+                        <div class="user-role">Admin</div>
+                    </div>
+                    <button class="btn-logout" onclick="logout()" title="Sair">🚪</button>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <header class="header">
+                <div class="header-title">
+                    <h1>Gestão de Rádios</h1>
+                </div>
+            </header>
+
+            <div class="page-content">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Rádios Cadastrados</h3>
+                        <div class="card-actions">
+                            <div class="filter-bar">
+                                <select id="filterStatus" class="form-control" onchange="loadRadios()">
+                                    <option value="todos">Todos os Status</option>
+                                    <option value="estoque">Em Estoque</option>
+                                    <option value="cliente">Com Cliente</option>
+                                    <option value="manutencao">Em Manutenção</option>
+                                </select>
+                                <input type="text" id="searchRadio" class="form-control" placeholder="Buscar rádio..."
+                                    onkeyup="loadRadios()">
+                            </div>
+                            <button class="btn btn-primary" onclick="openModal('add')">
+                                ➕ Novo Rádio
+                            </button>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-container">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Código</th>
+                                        <th>Modelo</th>
+                                        <th>Marca</th>
+                                        <th>Nº Série</th>
+                                        <th>Status</th>
+                                        <th>Cliente</th>
+                                        <th>Ações</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="radiosTableBody">
+                                    <tr>
+                                        <td colspan="7">
+                                            <div class="empty-state">
+                                                <p>Carregando...</p>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Modal Rádio -->
+    <div id="radioModal" class="modal-overlay">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 class="modal-title" id="modalTitle">Novo Rádio</h3>
+                <button class="modal-close" onclick="closeModal()">✕</button>
+            </div>
+            <div class="modal-body">
+                <form id="radioForm">
+                    <input type="hidden" id="radioId">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Código *</label>
+                            <input type="text" id="codigo" class="form-control" required placeholder="Ex: RAD-001">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Modelo *</label>
+                            <input type="text" id="modelo" class="form-control" required
+                                placeholder="Ex: Hytera PNC 560">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Marca</label>
+                            <input type="text" id="marca" class="form-control" placeholder="Ex: Hytera">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Número de Série</label>
+                            <input type="text" id="numero_serie" class="form-control" placeholder="Ex: SN123456">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Observações</label>
+                        <textarea id="observacoes" class="form-control" rows="3"
+                            placeholder="Observações adicionais..."></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" onclick="closeModal()">Cancelar</button>
+                <button class="btn btn-primary" onclick="saveRadio()">Salvar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Movimentação -->
+    <div id="movModal" class="modal-overlay">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 class="modal-title" id="movModalTitle">Registrar Saída</h3>
+                <button class="modal-close" onclick="closeMovModal()">✕</button>
+            </div>
+            <div class="modal-body">
+                <form id="movForm">
+                    <input type="hidden" id="movRadioId">
+                    <input type="hidden" id="movTipo">
+
+                    <div id="clienteField" class="form-group">
+                        <label class="form-label">Cliente *</label>
+                        <select id="movCliente" class="form-control">
+                            <option value="">Selecione um cliente</option>
+                        </select>
+                    </div>
+
+                    <div id="descricaoField" class="form-group" style="display:none;">
+                        <label class="form-label">Descrição do Problema *</label>
+                        <textarea id="movDescricao" class="form-control" rows="3"
+                            placeholder="Descreva o problema..."></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Observações</label>
+                        <textarea id="movObservacoes" class="form-control" rows="2"
+                            placeholder="Observações..."></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" onclick="closeMovModal()">Cancelar</button>
+                <button class="btn btn-primary" id="movSubmitBtn" onclick="saveMovimentacao()">Confirmar</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/auth.js"></script>
+    <script>
+        if (!requireAuth()) throw new Error('Não autenticado');
+        initUserInfo();
+        setActiveNav();
+
+        let clientes = [];
+
+        // Carregar rádios
+        async function loadRadios() {
+            try {
+                const status = document.getElementById('filterStatus').value;
+                const busca = document.getElementById('searchRadio').value;
+
+                let url = '/api/radios?';
+                if (status !== 'todos') url += `status=${status}&`;
+                if (busca) url += `busca=${encodeURIComponent(busca)}`;
+
+                const response = await fetchApi(url);
+                const radios = await response.json();
+
+                const tbody = document.getElementById('radiosTableBody');
+
+                if (radios.length === 0) {
+                    tbody.innerHTML = `
+                        <tr>
+                            <td colspan="7">
+                                <div class="empty-state">
+                                    <div class="empty-state-icon">📻</div>
+                                    <h3>Nenhum rádio encontrado</h3>
+                                    <p>Cadastre seu primeiro rádio clicando no botão acima.</p>
+                                </div>
+                            </td>
+                        </tr>
+                    `;
+                    return;
+                }
+
+                tbody.innerHTML = radios.map(radio => `
+                    <tr>
+                        <td><strong>${radio.codigo}</strong></td>
+                        <td>${radio.modelo}</td>
+                        <td>${radio.marca || '-'}</td>
+                        <td>${radio.numero_serie || '-'}</td>
+                        <td>${getStatusBadge(radio.status)}</td>
+                        <td>${radio.cliente_nome || '-'}</td>
+                        <td>
+                            <div class="action-btns">
+                                ${radio.status === 'estoque' ? `
+                                    <button class="btn btn-success btn-sm" onclick="openMovModal(${radio.id}, 'saida')" title="Registrar Saída">📤</button>
+                                    <button class="btn btn-warning btn-sm" onclick="openMovModal(${radio.id}, 'manutencao')" title="Enviar Manutenção">🔧</button>
+                                ` : ''}
+                                ${radio.status === 'cliente' ? `
+                                    <button class="btn btn-success btn-sm" onclick="registrarRetorno(${radio.id})" title="Registrar Retorno">📥</button>
+                                ` : ''}
+                                <button class="btn btn-outline btn-sm" onclick="openModal('edit', ${radio.id})" title="Editar">✏️</button>
+                                <button class="btn btn-danger btn-sm" onclick="deleteRadio(${radio.id})" title="Excluir">🗑️</button>
+                            </div>
+                        </td>
+                    </tr>
+                `).join('');
+            } catch (error) {
+                showToast('Erro ao carregar rádios', 'error');
+            }
+        }
+
+        // Carregar clientes para select
+        async function loadClientes() {
+            try {
+                const response = await fetchApi('/api/clientes');
+                clientes = await response.json();
+
+                const select = document.getElementById('movCliente');
+                select.innerHTML = '<option value="">Selecione um cliente</option>' +
+                    clientes.map(c => `<option value="${c.id}">${c.nome}</option>`).join('');
+            } catch (error) {
+                console.error('Erro ao carregar clientes:', error);
+            }
+        }
+
+        // Modal de rádio
+        function openModal(mode, id = null) {
+            const modal = document.getElementById('radioModal');
+            const title = document.getElementById('modalTitle');
+            const form = document.getElementById('radioForm');
+
+            form.reset();
+            document.getElementById('radioId').value = '';
+
+            if (mode === 'edit' && id) {
+                title.textContent = 'Editar Rádio';
+                loadRadioData(id);
+            } else {
+                title.textContent = 'Novo Rádio';
+            }
+
+            modal.classList.add('active');
+        }
+
+        function closeModal() {
+            document.getElementById('radioModal').classList.remove('active');
+        }
+
+        async function loadRadioData(id) {
+            try {
+                const response = await fetchApi(`/api/radios/${id}`);
+                const radio = await response.json();
+
+                document.getElementById('radioId').value = radio.id;
+                document.getElementById('codigo').value = radio.codigo;
+                document.getElementById('modelo').value = radio.modelo;
+                document.getElementById('marca').value = radio.marca || '';
+                document.getElementById('numero_serie').value = radio.numero_serie || '';
+                document.getElementById('observacoes').value = radio.observacoes || '';
+            } catch (error) {
+                showToast('Erro ao carregar dados do rádio', 'error');
+            }
+        }
+
+        async function saveRadio() {
+            const id = document.getElementById('radioId').value;
+            const data = {
+                codigo: document.getElementById('codigo').value,
+                modelo: document.getElementById('modelo').value,
+                marca: document.getElementById('marca').value,
+                numero_serie: document.getElementById('numero_serie').value,
+                observacoes: document.getElementById('observacoes').value
+            };
+
+            if (!data.codigo || !data.modelo) {
+                showToast('Código e modelo são obrigatórios', 'warning');
+                return;
+            }
+
+            try {
+                const url = id ? `/api/radios/${id}` : '/api/radios';
+                const method = id ? 'PUT' : 'POST';
+
+                const response = await fetchApi(url, {
+                    method,
+                    body: JSON.stringify(data)
+                });
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.error);
+                }
+
+                showToast(id ? 'Rádio atualizado!' : 'Rádio cadastrado!', 'success');
+                closeModal();
+                loadRadios();
+            } catch (error) {
+                showToast(error.message, 'error');
+            }
+        }
+
+        async function deleteRadio(id) {
+            if (!confirm('Deseja realmente excluir este rádio?')) return;
+
+            try {
+                const response = await fetchApi(`/api/radios/${id}`, { method: 'DELETE' });
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.error);
+                }
+
+                showToast('Rádio excluído!', 'success');
+                loadRadios();
+            } catch (error) {
+                showToast(error.message, 'error');
+            }
+        }
+
+        // Modal de movimentação
+        function openMovModal(radioId, tipo) {
+            const modal = document.getElementById('movModal');
+            const title = document.getElementById('movModalTitle');
+
+            document.getElementById('movRadioId').value = radioId;
+            document.getElementById('movTipo').value = tipo;
+            document.getElementById('movObservacoes').value = '';
+
+            if (tipo === 'saida') {
+                title.textContent = 'Registrar Saída para Cliente';
+                document.getElementById('clienteField').style.display = 'block';
+                document.getElementById('descricaoField').style.display = 'none';
+                document.getElementById('movSubmitBtn').className = 'btn btn-success';
+            } else if (tipo === 'manutencao') {
+                title.textContent = 'Enviar para Manutenção';
+                document.getElementById('clienteField').style.display = 'none';
+                document.getElementById('descricaoField').style.display = 'block';
+                document.getElementById('movSubmitBtn').className = 'btn btn-warning';
+            }
+
+            modal.classList.add('active');
+        }
+
+        function closeMovModal() {
+            document.getElementById('movModal').classList.remove('active');
+        }
+
+        async function saveMovimentacao() {
+            const radioId = document.getElementById('movRadioId').value;
+            const tipo = document.getElementById('movTipo').value;
+            const observacoes = document.getElementById('movObservacoes').value;
+
+            try {
+                let url, data;
+
+                if (tipo === 'saida') {
+                    const clienteId = document.getElementById('movCliente').value;
+                    if (!clienteId) {
+                        showToast('Selecione um cliente', 'warning');
+                        return;
+                    }
+                    url = '/api/movimentacoes/saida';
+                    data = { radio_id: parseInt(radioId), cliente_id: parseInt(clienteId), observacoes };
+                } else if (tipo === 'manutencao') {
+                    const descricao = document.getElementById('movDescricao').value;
+                    if (!descricao) {
+                        showToast('Informe a descrição do problema', 'warning');
+                        return;
+                    }
+                    url = '/api/movimentacoes/manutencao';
+                    data = { radio_id: parseInt(radioId), descricao, observacoes };
+                }
+
+                const response = await fetchApi(url, {
+                    method: 'POST',
+                    body: JSON.stringify(data)
+                });
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.error);
+                }
+
+                showToast('Movimentação registrada!', 'success');
+                closeMovModal();
+                loadRadios();
+            } catch (error) {
+                showToast(error.message, 'error');
+            }
+        }
+
+        async function registrarRetorno(radioId) {
+            if (!confirm('Confirmar retorno deste rádio ao estoque?')) return;
+
+            try {
+                const response = await fetchApi('/api/movimentacoes/retorno', {
+                    method: 'POST',
+                    body: JSON.stringify({ radio_id: radioId })
+                });
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.error);
+                }
+
+                showToast('Retorno registrado!', 'success');
+                loadRadios();
+            } catch (error) {
+                showToast(error.message, 'error');
+            }
+        }
+
+        // Inicializar
+        loadRadios();
+        loadClientes();
+    </script>
+</body>
+
+</html>

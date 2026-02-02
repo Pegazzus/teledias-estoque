@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Sistema de Estoque | Teledias Telecom</title>
+    <meta name="description" content="Dashboard do sistema de controle de estoque de rádios">
+    <link rel="stylesheet" href="css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+
+<body>
+    <div class="app-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <div class="sidebar-logo">
+                    <div class="sidebar-logo-icon">📻</div>
+                    <div class="sidebar-logo-text">
+                        <h2>Teledias</h2>
+                        <span>Sistema de Estoque</span>
+                    </div>
+                </div>
+            </div>
+
+            <nav class="sidebar-nav">
+                <div class="nav-section">
+                    <div class="nav-section-title">Menu Principal</div>
+                    <a href="dashboard.html" class="nav-link">
+                        <span class="nav-link-icon">📊</span>
+                        Dashboard
+                    </a>
+                    <a href="radios.html" class="nav-link">
+                        <span class="nav-link-icon">📻</span>
+                        Rádios
+                    </a>
+                    <a href="clientes.html" class="nav-link">
+                        <span class="nav-link-icon">👥</span>
+                        Clientes
+                    </a>
+                    <a href="movimentacoes.html" class="nav-link">
+                        <span class="nav-link-icon">🔄</span>
+                        Movimentações
+                    </a>
+                </div>
+
+                <div class="nav-section">
+                    <div class="nav-section-title">Manutenção</div>
+                    <a href="manutencoes.html" class="nav-link">
+                        <span class="nav-link-icon">🔧</span>
+                        Manutenções
+                    </a>
+                </div>
+            </nav>
+
+            <div class="sidebar-footer">
+                <div class="user-info">
+                    <div class="user-avatar">A</div>
+                    <div class="user-details">
+                        <div class="user-name">Administrador</div>
+                        <div class="user-role">Admin</div>
+                    </div>
+                    <button class="btn-logout" onclick="logout()" title="Sair">
+                        🚪
+                    </button>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <header class="header">
+                <div class="header-title">
+                    <h1>Dashboard</h1>
+                </div>
+                <div class="header-actions">
+                    <div class="search-box">
+                        <span>🔍</span>
+                        <input type="text" placeholder="Buscar...">
+                    </div>
+                </div>
+            </header>
+
+            <div class="page-content">
+                <!-- Stats Cards -->
+                <div class="stats-grid">
+                    <div class="stat-card total">
+                        <div class="stat-icon">📻</div>
+                        <div class="stat-value" id="totalRadios">0</div>
+                        <div class="stat-label">Total de Rádios</div>
+                    </div>
+                    <div class="stat-card estoque">
+                        <div class="stat-icon">📦</div>
+                        <div class="stat-value" id="radiosEstoque">0</div>
+                        <div class="stat-label">Em Estoque</div>
+                    </div>
+                    <div class="stat-card cliente">
+                        <div class="stat-icon">👤</div>
+                        <div class="stat-value" id="radiosCliente">0</div>
+                        <div class="stat-label">Com Clientes</div>
+                    </div>
+                    <div class="stat-card manutencao">
+                        <div class="stat-icon">🔧</div>
+                        <div class="stat-value" id="radiosManutencao">0</div>
+                        <div class="stat-label">Em Manutenção</div>
+                    </div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;">
+                    <!-- Chart -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">Distribuição de Rádios</h3>
+                        </div>
+                        <div class="chart-container">
+                            <canvas id="statusChart"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Últimas Movimentações -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">Últimas Movimentações</h3>
+                            <a href="movimentacoes.html" class="btn btn-outline btn-sm">Ver todas</a>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-container">
+                                <table>
+                                    <thead>
+                                        <tr>
+                                            <th>Rádio</th>
+                                            <th>Tipo</th>
+                                            <th>Data</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="ultimasMovimentacoes">
+                                        <tr>
+                                            <td colspan="3" class="empty-state">
+                                                <p>Carregando...</p>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="js/auth.js"></script>
+    <script>
+        // Verificar autenticação
+        if (!requireAuth()) {
+            throw new Error('Não autenticado');
+        }
+
+        // Inicializar
+        initUserInfo();
+        setActiveNav();
+
+        let statusChart = null;
+
+        // Carregar estatísticas
+        async function loadStats() {
+            try {
+                const response = await fetchApi('/api/radios/stats/resumo');
+                const stats = await response.json();
+
+                document.getElementById('totalRadios').textContent = stats.total;
+                document.getElementById('radiosEstoque').textContent = stats.estoque;
+                document.getElementById('radiosCliente').textContent = stats.cliente;
+                document.getElementById('radiosManutencao').textContent = stats.manutencao;
+
+                // Atualizar gráfico
+                updateChart(stats);
+            } catch (error) {
+                console.error('Erro ao carregar estatísticas:', error);
+            }
+        }
+
+        // Atualizar gráfico
+        function updateChart(stats) {
+            const ctx = document.getElementById('statusChart').getContext('2d');
+
+            if (statusChart) {
+                statusChart.destroy();
+            }
+
+            statusChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Estoque', 'Cliente', 'Manutenção'],
+                    datasets: [{
+                        data: [stats.estoque, stats.cliente, stats.manutencao],
+                        backgroundColor: [
+                            '#48bb78',
+                            '#4299e1',
+                            '#ed8936'
+                        ],
+                        borderWidth: 0,
+                        hoverOffset: 10
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                padding: 20,
+                                usePointStyle: true,
+                                font: {
+                                    family: 'Inter'
+                                }
+                            }
+                        }
+                    },
+                    cutout: '60%'
+                }
+            });
+        }
+
+        // Carregar últimas movimentações
+        async function loadUltimasMovimentacoes() {
+            try {
+                const response = await fetchApi('/api/movimentacoes?limite=5');
+                const movimentacoes = await response.json();
+
+                const tbody = document.getElementById('ultimasMovimentacoes');
+
+                if (movimentacoes.length === 0) {
+                    tbody.innerHTML = `
+                        <tr>
+                            <td colspan="3">
+                                <div class="empty-state">
+                                    <p>Nenhuma movimentação registrada</p>
+                                </div>
+                            </td>
+                        </tr>
+                    `;
+                    return;
+                }
+
+                const tipoMap = {
+                    'saida': 'Saída',
+                    'retorno': 'Retorno',
+                    'manutencao': 'Manutenção',
+                    'retorno_manutencao': 'Ret. Manutenção'
+                };
+
+                tbody.innerHTML = movimentacoes.map(mov => `
+                    <tr>
+                        <td><strong>${mov.radio_codigo}</strong></td>
+                        <td>${tipoMap[mov.tipo] || mov.tipo}</td>
+                        <td>${formatDate(mov.created_at)}</td>
+                    </tr>
+                `).join('');
+            } catch (error) {
+                console.error('Erro ao carregar movimentações:', error);
+            }
+        }
+
+        // Inicializar página
+        loadStats();
+        loadUltimasMovimentacoes();
+    </script>
+</body>
+
+</html>
