@@ -1,8 +1,16 @@
 const Database = require('better-sqlite3');
 const path = require('path');
+const fs = require('fs');
 const bcrypt = require('bcryptjs');
 
-const dbPath = path.join(__dirname, '..', 'database', 'database.sqlite');
+// Criar diretório do banco de dados se não existir
+const dbDir = path.join(__dirname, '..', 'database');
+if (!fs.existsSync(dbDir)) {
+    fs.mkdirSync(dbDir, { recursive: true });
+    console.log('Diretório database criado');
+}
+
+const dbPath = path.join(dbDir, 'database.sqlite');
 const db = new Database(dbPath);
 
 // Criar tabelas
