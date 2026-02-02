@@ -1,12 +1,12 @@
 const express = require('express');
 const db = require('../models/database');
-const { authMiddleware } = require('../middleware/auth');
+const { authMiddleware, requireAdmin } = require('../middleware/auth');
 
 const router = express.Router();
 
 router.use(authMiddleware);
 
-// Listar todos os clientes
+// Listar todos os clientes (todos os usuários podem ver)
 router.get('/', (req, res) => {
     try {
         const { busca } = req.query;
@@ -30,7 +30,7 @@ router.get('/', (req, res) => {
     }
 });
 
-// Buscar cliente por ID
+// Buscar cliente por ID (todos os usuários podem ver)
 router.get('/:id', (req, res) => {
     try {
         const cliente = db.prepare('SELECT * FROM clientes WHERE id = ?').get(req.params.id);
@@ -49,8 +49,8 @@ router.get('/:id', (req, res) => {
     }
 });
 
-// Criar novo cliente
-router.post('/', (req, res) => {
+// Criar novo cliente (admin only)
+router.post('/', requireAdmin, (req, res) => {
     try {
         const { nome, cnpj_cpf, telefone, email, endereco } = req.body;
 
@@ -77,8 +77,8 @@ router.post('/', (req, res) => {
     }
 });
 
-// Atualizar cliente
-router.put('/:id', (req, res) => {
+// Atualizar cliente (admin only)
+router.put('/:id', requireAdmin, (req, res) => {
     try {
         const { nome, cnpj_cpf, telefone, email, endereco } = req.body;
         const { id } = req.params;
@@ -106,8 +106,8 @@ router.put('/:id', (req, res) => {
     }
 });
 
-// Deletar cliente
-router.delete('/:id', (req, res) => {
+// Deletar cliente (admin only)
+router.delete('/:id', requireAdmin, (req, res) => {
     try {
         const { id } = req.params;
 

@@ -22,9 +22,18 @@ function initializeDatabase() {
             nome TEXT NOT NULL,
             email TEXT UNIQUE NOT NULL,
             senha TEXT NOT NULL,
+            cargo TEXT DEFAULT 'operador' CHECK(cargo IN ('admin', 'operador')),
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP
         )
     `);
+
+    // Adicionar coluna cargo se não existir (migração para bancos existentes)
+    try {
+        db.exec(`ALTER TABLE usuarios ADD COLUMN cargo TEXT DEFAULT 'operador' CHECK(cargo IN ('admin', 'operador'))`);
+        console.log('Coluna cargo adicionada à tabela usuarios');
+    } catch (e) {
+        // Coluna já existe, ignorar
+    }
 
     // Tabela de clientes
     db.exec(`
@@ -92,8 +101,11 @@ function initializeDatabase() {
     const adminExists = db.prepare('SELECT id FROM usuarios WHERE email = ?').get('admin@teledias.com');
     if (!adminExists) {
         const senhaHash = bcrypt.hashSync('admin123', 10);
-        db.prepare('INSERT INTO usuarios (nome, email, senha) VALUES (?, ?, ?)').run('Administrador', 'admin@teledias.com', senhaHash);
+        db.prepare('INSERT INTO usuarios (nome, email, senha, cargo) VALUES (?, ?, ?, ?)').run('Administrador', 'admin@teledias.com', senhaHash, 'admin');
         console.log('Usuário admin criado: admin@teledias.com / admin123');
+    } else {
+        // Garantir que o admin tenha cargo 'admin'
+        db.prepare('UPDATE usuarios SET cargo = ? WHERE email = ?').run('admin', 'admin@teledias.com');
     }
 }
 

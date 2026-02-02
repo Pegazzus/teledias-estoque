@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Manutenções - Sistema de Estoque | Teledias Telecom</title>
+    <title>Usuários - Sistema de Estoque | Teledias Telecom</title>
     <link rel="stylesheet" href="css/style.css">
 </head>
 
@@ -76,43 +76,35 @@
         <main class="main-content">
             <header class="header">
                 <div class="header-title">
-                    <h1>Gestão de Manutenções</h1>
+                    <h1>Gestão de Usuários</h1>
+                </div>
+                <div class="header-actions">
+                    <button class="btn btn-primary" onclick="openModal()">
+                        <span>+</span> Novo Usuário
+                    </button>
                 </div>
             </header>
 
             <div class="page-content">
                 <div class="card">
                     <div class="card-header">
-                        <h3 class="card-title">Manutenções</h3>
-                        <div class="card-actions">
-                            <div class="filter-bar">
-                                <select id="filterStatus" class="form-control" onchange="loadManutencoes()">
-                                    <option value="">Todos os status</option>
-                                    <option value="pendente">Pendentes</option>
-                                    <option value="em_andamento">Em Andamento</option>
-                                    <option value="concluida">Concluídas</option>
-                                </select>
-                            </div>
-                        </div>
+                        <h3 class="card-title">Usuários do Sistema</h3>
                     </div>
                     <div class="card-body">
                         <div class="table-container">
                             <table>
                                 <thead>
                                     <tr>
-                                        <th>Rádio</th>
-                                        <th>Modelo</th>
-                                        <th>Descrição</th>
-                                        <th>Status</th>
-                                        <th>Entrada</th>
-                                        <th>Conclusão</th>
-                                        <th>Custo</th>
+                                        <th>Nome</th>
+                                        <th>Email</th>
+                                        <th>Cargo</th>
+                                        <th>Cadastro</th>
                                         <th>Ações</th>
                                     </tr>
                                 </thead>
-                                <tbody id="manutencoesTableBody">
+                                <tbody id="usuariosTableBody">
                                     <tr>
-                                        <td colspan="8">
+                                        <td colspan="5">
                                             <div class="empty-state">
                                                 <p>Carregando...</p>
                                             </div>
@@ -127,30 +119,39 @@
         </main>
     </div>
 
-    <!-- Modal Concluir -->
-    <div id="concluirModal" class="modal-overlay">
+    <!-- Modal Novo Usuário -->
+    <div id="usuarioModal" class="modal-overlay">
         <div class="modal">
             <div class="modal-header">
-                <h3 class="modal-title">Concluir Manutenção</h3>
+                <h3 class="modal-title">Novo Usuário</h3>
                 <button class="modal-close" onclick="closeModal()">✕</button>
             </div>
             <div class="modal-body">
-                <form id="concluirForm">
-                    <input type="hidden" id="manutencaoId">
+                <form id="usuarioForm">
                     <div class="form-group">
-                        <label class="form-label">Custo (R$)</label>
-                        <input type="number" id="custo" class="form-control" step="0.01" min="0" placeholder="0.00">
+                        <label class="form-label">Nome *</label>
+                        <input type="text" id="nome" class="form-control" required>
                     </div>
                     <div class="form-group">
-                        <label class="form-label">Observações</label>
-                        <textarea id="observacoes" class="form-control" rows="3"
-                            placeholder="Detalhes do serviço realizado..."></textarea>
+                        <label class="form-label">Email *</label>
+                        <input type="email" id="email" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Senha *</label>
+                        <input type="password" id="senha" class="form-control" required minlength="6">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Cargo</label>
+                        <select id="cargo" class="form-control">
+                            <option value="operador">Operador</option>
+                            <option value="admin">Administrador</option>
+                        </select>
                     </div>
                 </form>
             </div>
             <div class="modal-footer">
                 <button class="btn btn-outline" onclick="closeModal()">Cancelar</button>
-                <button class="btn btn-success" onclick="concluirManutencao()">Concluir</button>
+                <button class="btn btn-primary" onclick="saveUsuario()">Salvar</button>
             </div>
         </div>
     </div>
@@ -158,28 +159,31 @@
     <script src="js/auth.js"></script>
     <script>
         if (!requireAuth()) throw new Error('Não autenticado');
+
+        // Verificar se é admin
+        if (!isAdmin()) {
+            window.location.href = 'dashboard.html';
+            throw new Error('Acesso negado');
+        }
+
         initUserInfo();
         setActiveNav();
 
-        async function loadManutencoes() {
+        async function loadUsuarios() {
             try {
-                const status = document.getElementById('filterStatus').value;
-                let url = '/api/movimentacoes/manutencoes';
-                if (status) url += `?status=${status}`;
+                const response = await fetchApi('/api/auth/usuarios');
+                const usuarios = await response.json();
 
-                const response = await fetchApi(url);
-                const manutencoes = await response.json();
+                const tbody = document.getElementById('usuariosTableBody');
+                const currentUser = getUsuario();
 
-                const tbody = document.getElementById('manutencoesTableBody');
-
-                if (manutencoes.length === 0) {
+                if (usuarios.length === 0) {
                     tbody.innerHTML = `
                         <tr>
-                            <td colspan="8">
+                            <td colspan="5">
                                 <div class="empty-state">
-                                    <div class="empty-state-icon">🔧</div>
-                                    <h3>Nenhuma manutenção encontrada</h3>
-                                    <p>Envie rádios para manutenção através da página de rádios.</p>
+                                    <div class="empty-state-icon">👤</div>
+                                    <h3>Nenhum usuário encontrado</h3>
                                 </div>
                             </td>
                         </tr>
@@ -187,37 +191,55 @@
                     return;
                 }
 
-                tbody.innerHTML = manutencoes.map(m => `
+                tbody.innerHTML = usuarios.map(u => `
                     <tr>
-                        <td><strong>${m.radio_codigo}</strong></td>
-                        <td>${m.radio_modelo}</td>
-                        <td>${m.descricao}</td>
-                        <td>${getStatusBadge(m.status)}</td>
-                        <td>${formatDate(m.data_entrada)}</td>
-                        <td>${m.data_conclusao ? formatDate(m.data_conclusao) : '-'}</td>
-                        <td>${m.custo ? `R$ ${parseFloat(m.custo).toFixed(2)}` : '-'}</td>
+                        <td><strong>${u.nome}</strong></td>
+                        <td>${u.email}</td>
+                        <td><span class="badge ${u.cargo === 'admin' ? 'badge-cliente' : 'badge-estoque'}">${getCargoLabel(u.cargo)}</span></td>
+                        <td>${formatDate(u.created_at)}</td>
                         <td>
                             <div class="action-btns">
-                                ${m.status !== 'concluida' ? `
-                                    ${m.status === 'pendente' ? `
-                                        <button class="btn btn-warning btn-sm" onclick="iniciarManutencao(${m.id})" title="Iniciar">▶️</button>
-                                    ` : ''}
-                                    <button class="btn btn-success btn-sm" onclick="openConcluirModal(${m.id})" title="Concluir">✅</button>
-                                ` : ''}
+                                ${u.id !== currentUser.id ? `
+                                    <button class="btn btn-danger btn-sm" onclick="deleteUsuario(${u.id}, '${u.nome}')" title="Excluir">🗑️</button>
+                                ` : '<span class="badge badge-estoque">Você</span>'}
                             </div>
                         </td>
                     </tr>
                 `).join('');
             } catch (error) {
-                showToast('Erro ao carregar manutenções', 'error');
+                showToast('Erro ao carregar usuários', 'error');
             }
         }
 
-        async function iniciarManutencao(id) {
+        function openModal() {
+            document.getElementById('usuarioForm').reset();
+            document.getElementById('usuarioModal').classList.add('active');
+        }
+
+        function closeModal() {
+            document.getElementById('usuarioModal').classList.remove('active');
+        }
+
+        async function saveUsuario() {
+            const nome = document.getElementById('nome').value;
+            const email = document.getElementById('email').value;
+            const senha = document.getElementById('senha').value;
+            const cargo = document.getElementById('cargo').value;
+
+            if (!nome || !email || !senha) {
+                showToast('Preencha todos os campos obrigatórios', 'error');
+                return;
+            }
+
+            if (senha.length < 6) {
+                showToast('A senha deve ter no mínimo 6 caracteres', 'error');
+                return;
+            }
+
             try {
-                const response = await fetchApi(`/api/movimentacoes/manutencoes/${id}`, {
-                    method: 'PUT',
-                    body: JSON.stringify({ status: 'em_andamento' })
+                const response = await fetchApi('/api/auth/registrar', {
+                    method: 'POST',
+                    body: JSON.stringify({ nome, email, senha, cargo })
                 });
 
                 if (!response.ok) {
@@ -225,37 +247,20 @@
                     throw new Error(error.error);
                 }
 
-                showToast('Manutenção iniciada!', 'success');
-                loadManutencoes();
+                showToast('Usuário criado com sucesso!', 'success');
+                closeModal();
+                loadUsuarios();
             } catch (error) {
                 showToast(error.message, 'error');
             }
         }
 
-        function openConcluirModal(id) {
-            document.getElementById('manutencaoId').value = id;
-            document.getElementById('custo').value = '';
-            document.getElementById('observacoes').value = '';
-            document.getElementById('concluirModal').classList.add('active');
-        }
-
-        function closeModal() {
-            document.getElementById('concluirModal').classList.remove('active');
-        }
-
-        async function concluirManutencao() {
-            const id = document.getElementById('manutencaoId').value;
-            const custo = document.getElementById('custo').value;
-            const observacoes = document.getElementById('observacoes').value;
+        async function deleteUsuario(id, nome) {
+            if (!confirm(`Deseja realmente excluir o usuário "${nome}"?`)) return;
 
             try {
-                const response = await fetchApi('/api/movimentacoes/concluir-manutencao', {
-                    method: 'POST',
-                    body: JSON.stringify({
-                        manutencao_id: parseInt(id),
-                        custo: custo ? parseFloat(custo) : null,
-                        observacoes
-                    })
+                const response = await fetchApi(`/api/auth/usuarios/${id}`, {
+                    method: 'DELETE'
                 });
 
                 if (!response.ok) {
@@ -263,16 +268,15 @@
                     throw new Error(error.error);
                 }
 
-                showToast('Manutenção concluída! Rádio retornou ao estoque.', 'success');
-                closeModal();
-                loadManutencoes();
+                showToast('Usuário excluído com sucesso!', 'success');
+                loadUsuarios();
             } catch (error) {
                 showToast(error.message, 'error');
             }
         }
 
         // Inicializar
-        loadManutencoes();
+        loadUsuarios();
     </script>
 </body>
 

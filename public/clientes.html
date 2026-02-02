@@ -50,6 +50,14 @@
                         Manutenções
                     </a>
                 </div>
+
+                <div class="nav-section admin-only">
+                    <div class="nav-section-title">Administração</div>
+                    <a href="usuarios.html" class="nav-link">
+                        <span class="nav-link-icon">👤</span>
+                        Usuários
+                    </a>
+                </div>
             </nav>
 
             <div class="sidebar-footer">
@@ -79,7 +87,7 @@
                         <div class="card-actions">
                             <input type="text" id="searchCliente" class="form-control" placeholder="Buscar cliente..."
                                 onkeyup="loadClientes()">
-                            <button class="btn btn-primary" onclick="openModal('add')">
+                            <button class="btn btn-primary btn-admin-only" onclick="openModal('add')">
                                 ➕ Novo Cliente
                             </button>
                         </div>
@@ -217,8 +225,10 @@
                         </td>
                         <td>
                             <div class="action-btns">
-                                <button class="btn btn-outline btn-sm" onclick="openModal('edit', ${cliente.id})" title="Editar">✏️</button>
-                                <button class="btn btn-danger btn-sm" onclick="deleteCliente(${cliente.id})" title="Excluir">🗑️</button>
+                                ${isAdmin() ? `
+                                    <button class="btn btn-outline btn-sm" onclick="openModal('edit', ${cliente.id})" title="Editar">✏️</button>
+                                    <button class="btn btn-danger btn-sm" onclick="deleteCliente(${cliente.id})" title="Excluir">🗑️</button>
+                                ` : '-'}
                             </div>
                         </td>
                     </tr>

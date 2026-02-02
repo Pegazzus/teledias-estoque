@@ -25,10 +25,20 @@ function authMiddleware(req, res, next) {
         const decoded = jwt.verify(token, JWT_SECRET);
         req.userId = decoded.id;
         req.userName = decoded.nome;
+        req.userCargo = decoded.cargo;
         return next();
     } catch (err) {
         return res.status(401).json({ error: 'Token inválido' });
     }
 }
 
-module.exports = { authMiddleware, JWT_SECRET };
+// Middleware para verificar se usuário é admin
+function requireAdmin(req, res, next) {
+    if (req.userCargo !== 'admin') {
+        return res.status(403).json({ error: 'Acesso negado. Apenas administradores podem realizar esta ação.' });
+    }
+    return next();
+}
+
+module.exports = { authMiddleware, requireAdmin, JWT_SECRET };
+

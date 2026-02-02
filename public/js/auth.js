@@ -16,6 +16,11 @@ function isAuthenticated() {
     return !!token;
 }
 
+function isAdmin() {
+    const usuario = getUsuario();
+    return usuario && usuario.cargo === 'admin';
+}
+
 function logout() {
     localStorage.removeItem('token');
     localStorage.removeItem('usuario');
@@ -121,6 +126,7 @@ function initUserInfo() {
     if (usuario) {
         const userNameEl = document.querySelector('.user-name');
         const userAvatarEl = document.querySelector('.user-avatar');
+        const userRoleEl = document.querySelector('.user-role');
 
         if (userNameEl) {
             userNameEl.textContent = usuario.nome;
@@ -128,10 +134,13 @@ function initUserInfo() {
         if (userAvatarEl) {
             userAvatarEl.textContent = usuario.nome.charAt(0).toUpperCase();
         }
+        if (userRoleEl) {
+            userRoleEl.textContent = usuario.cargo === 'admin' ? 'Administrador' : 'Operador';
+        }
     }
 }
 
-// Set active nav link
+// Set active nav link and handle admin-only links
 function setActiveNav() {
     const currentPage = window.location.pathname.split('/').pop() || 'dashboard.html';
     const navLinks = document.querySelectorAll('.nav-link');
@@ -142,4 +151,29 @@ function setActiveNav() {
             link.classList.add('active');
         }
     });
+
+    // Mostrar/ocultar links de admin
+    const adminOnlyLinks = document.querySelectorAll('.admin-only');
+    adminOnlyLinks.forEach(el => {
+        if (isAdmin()) {
+            el.style.display = '';
+        } else {
+            el.style.display = 'none';
+        }
+    });
+
+    // Mostrar/ocultar botões de admin
+    const adminOnlyBtns = document.querySelectorAll('.btn-admin-only');
+    adminOnlyBtns.forEach(el => {
+        if (isAdmin()) {
+            el.style.display = '';
+        } else {
+            el.style.display = 'none';
+        }
+    });
+}
+
+// Helper to get cargo label
+function getCargoLabel(cargo) {
+    return cargo === 'admin' ? 'Administrador' : 'Operador';
 }
