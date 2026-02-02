@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,10 +8,12 @@
     <meta name="description" content="Sistema de controle de estoque de rádios - Teledias Telecom">
     <link rel="stylesheet" href="css/style.css">
 </head>
+
 <body class="login-page">
     <div class="login-container">
         <div class="login-logo">
-            <h1>📻 Teledias Telecom</h1>
+            <img src="img/logo.png" alt="Teledias Telecom" style="width: 120px; height: auto; margin-bottom: 1rem;">
+            <h1>Teledias Telecom</h1>
             <p>Sistema de Controle de Estoque</p>
         </div>
 
@@ -24,7 +27,8 @@
 
             <div class="form-group">
                 <label for="senha">Senha</label>
-                <input type="password" id="senha" name="senha" placeholder="••••••••" required autocomplete="current-password">
+                <input type="password" id="senha" name="senha" placeholder="••••••••" required
+                    autocomplete="current-password">
             </div>
 
             <button type="submit" class="btn-login">
@@ -42,7 +46,7 @@
 
         document.getElementById('loginForm').addEventListener('submit', async (e) => {
             e.preventDefault();
-            
+
             const email = document.getElementById('email').value;
             const senha = document.getElementById('senha').value;
             const errorDiv = document.getElementById('loginError');
@@ -80,4 +84,5 @@
         });
     </script>
 </body>
+
 </html>
