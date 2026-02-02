@@ -2,40 +2,50 @@ const express = require('express');
 const cors = require('cors');
 const path = require('path');
 
-// Importar rotas
-const authRoutes = require('./routes/auth');
-const radiosRoutes = require('./routes/radios');
-const clientesRoutes = require('./routes/clientes');
-const movimentacoesRoutes = require('./routes/movimentacoes');
+// Importar banco de dados
+const { initializeDatabase } = require('./models/database');
 
-const app = express();
-const PORT = process.env.PORT || 3000;
+// Inicializar banco de dados antes de iniciar o servidor
+async function startServer() {
+    try {
+        await initializeDatabase();
 
-// Middlewares
-app.use(cors());
-app.use(express.json());
-app.use(express.static(path.join(__dirname, '..', 'public')));
+        // Importar rotas após inicialização do banco
+        const authRoutes = require('./routes/auth');
+        const radiosRoutes = require('./routes/radios');
+        const clientesRoutes = require('./routes/clientes');
+        const movimentacoesRoutes = require('./routes/movimentacoes');
+        const relatoriosRoutes = require('./routes/relatorios');
 
-// Rotas da API
-app.use('/api/auth', authRoutes);
-app.use('/api/radios', radiosRoutes);
-app.use('/api/clientes', clientesRoutes);
-app.use('/api/movimentacoes', movimentacoesRoutes);
+        const app = express();
+        const PORT = process.env.PORT || 3000;
 
-// Rota raiz - redirecionar para login
-app.get('/', (req, res) => {
-    res.redirect('/login.html');
-});
+        // Middlewares
+        app.use(cors());
+        app.use(express.json());
+        app.use(express.static(path.join(__dirname, '..', 'public')));
 
-// Tratamento de erros
-app.use((err, req, res, next) => {
-    console.error(err.stack);
-    res.status(500).json({ error: 'Erro interno do servidor' });
-});
+        // Rotas da API
+        app.use('/api/auth', authRoutes);
+        app.use('/api/radios', radiosRoutes);
+        app.use('/api/clientes', clientesRoutes);
+        app.use('/api/movimentacoes', movimentacoesRoutes);
+        app.use('/api/relatorios', relatoriosRoutes);
 
-// Iniciar servidor
-app.listen(PORT, () => {
-    console.log(`
+        // Rota raiz - redirecionar para login
+        app.get('/', (req, res) => {
+            res.redirect('/login.html');
+        });
+
+        // Tratamento de erros
+        app.use((err, req, res, next) => {
+            console.error(err.stack);
+            res.status(500).json({ error: 'Erro interno do servidor' });
+        });
+
+        // Iniciar servidor
+        app.listen(PORT, () => {
+            console.log(`
 ╔════════════════════════════════════════════════════════════╗
 ║                                                            ║
 ║   🔌 Sistema de Estoque - Teledias Telecom                ║
@@ -47,5 +57,12 @@ app.listen(PORT, () => {
 ║   Senha: admin123                                          ║
 ║                                                            ║
 ╚════════════════════════════════════════════════════════════╝
-    `);
-});
+            `);
+        });
+    } catch (error) {
+        console.error('❌ Erro ao iniciar servidor:', error);
+        process.exit(1);
+    }
+}
+
+startServer();

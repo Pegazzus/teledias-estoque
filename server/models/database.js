@@ -1,22 +1,56 @@
-const Database = require('better-sqlite3');
-const path = require('path');
-const fs = require('fs');
+const { createClient } = require('@libsql/client');
 const bcrypt = require('bcryptjs');
 
-// Criar diretório do banco de dados se não existir
-const dbDir = path.join(__dirname, '..', 'database');
-if (!fs.existsSync(dbDir)) {
-    fs.mkdirSync(dbDir, { recursive: true });
-    console.log('Diretório database criado');
+// Configuração do banco de dados
+// Se TURSO_DATABASE_URL estiver definido, usa Turso (produção)
+// Caso contrário, usa SQLite local (desenvolvimento)
+let db;
+
+if (process.env.TURSO_DATABASE_URL) {
+    console.log('🌐 Conectando ao Turso (produção)...');
+    db = createClient({
+        url: process.env.TURSO_DATABASE_URL,
+        authToken: process.env.TURSO_AUTH_TOKEN
+    });
+} else {
+    console.log('💾 Usando SQLite local (desenvolvimento)...');
+    db = createClient({
+        url: 'file:./server/database/database.sqlite'
+    });
 }
 
-const dbPath = path.join(dbDir, 'database.sqlite');
-const db = new Database(dbPath);
+// Wrapper para compatibilidade com código existente
+const dbWrapper = {
+    prepare: (sql) => ({
+        run: async (...params) => {
+            const result = await db.execute({ sql, args: params });
+            return { lastInsertRowid: result.lastInsertRowid, changes: result.rowsAffected };
+        },
+        get: async (...params) => {
+            const result = await db.execute({ sql, args: params });
+            return result.rows[0] || null;
+        },
+        all: async (...params) => {
+            const result = await db.execute({ sql, args: params });
+            return result.rows;
+        }
+    }),
+    exec: async (sql) => {
+        const statements = sql.split(';').filter(s => s.trim());
+        for (const statement of statements) {
+            if (statement.trim()) {
+                await db.execute(statement);
+            }
+        }
+    }
+};
 
-// Criar tabelas
-function initializeDatabase() {
+// Inicializar banco de dados
+async function initializeDatabase() {
+    console.log('📦 Inicializando banco de dados...');
+
     // Tabela de usuários
-    db.exec(`
+    await db.execute(`
         CREATE TABLE IF NOT EXISTS usuarios (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             nome TEXT NOT NULL,
@@ -27,16 +61,8 @@ function initializeDatabase() {
         )
     `);
 
-    // Adicionar coluna cargo se não existir (migração para bancos existentes)
-    try {
-        db.exec(`ALTER TABLE usuarios ADD COLUMN cargo TEXT DEFAULT 'operador' CHECK(cargo IN ('admin', 'operador'))`);
-        console.log('Coluna cargo adicionada à tabela usuarios');
-    } catch (e) {
-        // Coluna já existe, ignorar
-    }
-
     // Tabela de clientes
-    db.exec(`
+    await db.execute(`
         CREATE TABLE IF NOT EXISTS clientes (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             nome TEXT NOT NULL,
@@ -49,7 +75,7 @@ function initializeDatabase() {
     `);
 
     // Tabela de rádios
-    db.exec(`
+    await db.execute(`
         CREATE TABLE IF NOT EXISTS radios (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             codigo TEXT UNIQUE NOT NULL,
@@ -65,7 +91,7 @@ function initializeDatabase() {
     `);
 
     // Tabela de movimentações
-    db.exec(`
+    await db.execute(`
         CREATE TABLE IF NOT EXISTS movimentacoes (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             radio_id INTEGER NOT NULL,
@@ -83,7 +109,7 @@ function initializeDatabase() {
     `);
 
     // Tabela de manutenções
-    db.exec(`
+    await db.execute(`
         CREATE TABLE IF NOT EXISTS manutencoes (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             radio_id INTEGER NOT NULL,
@@ -98,18 +124,22 @@ function initializeDatabase() {
     `);
 
     // Criar usuário admin padrão se não existir
-    const adminExists = db.prepare('SELECT id FROM usuarios WHERE email = ?').get('admin@teledias.com');
-    if (!adminExists) {
+    const adminResult = await db.execute({
+        sql: 'SELECT id FROM usuarios WHERE email = ?',
+        args: ['admin@teledias.com']
+    });
+
+    if (adminResult.rows.length === 0) {
         const senhaHash = bcrypt.hashSync('admin123', 10);
-        db.prepare('INSERT INTO usuarios (nome, email, senha, cargo) VALUES (?, ?, ?, ?)').run('Administrador', 'admin@teledias.com', senhaHash, 'admin');
-        console.log('Usuário admin criado: admin@teledias.com / admin123');
-    } else {
-        // Garantir que o admin tenha cargo 'admin'
-        db.prepare('UPDATE usuarios SET cargo = ? WHERE email = ?').run('admin', 'admin@teledias.com');
+        await db.execute({
+            sql: 'INSERT INTO usuarios (nome, email, senha, cargo) VALUES (?, ?, ?, ?)',
+            args: ['Administrador', 'admin@teledias.com', senhaHash, 'admin']
+        });
+        console.log('✅ Usuário admin criado: admin@teledias.com / admin123');
     }
+
+    console.log('✅ Banco de dados inicializado com sucesso!');
 }
 
-// Inicializar banco de dados
-initializeDatabase();
-
-module.exports = db;
+// Exportar cliente e função de inicialização
+module.exports = { db, initializeDatabase };

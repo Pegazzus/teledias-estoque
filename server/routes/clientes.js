@@ -1,48 +1,56 @@
 const express = require('express');
-const db = require('../models/database');
-const { authMiddleware, requireAdmin } = require('../middleware/auth');
+const { db } = require('../models/database');
+const { authMiddleware, requireAdmin } = require('./auth');
 
 const router = express.Router();
 
 router.use(authMiddleware);
 
-// Listar todos os clientes (todos os usuários podem ver)
-router.get('/', (req, res) => {
+// Listar todos os clientes
+router.get('/', async (req, res) => {
     try {
         const { busca } = req.query;
 
-        let query = 'SELECT * FROM clientes WHERE 1=1';
-        const params = [];
+        let sql = 'SELECT * FROM clientes WHERE 1=1';
+        const args = [];
 
         if (busca) {
-            query += ' AND (nome LIKE ? OR cnpj_cpf LIKE ? OR telefone LIKE ? OR email LIKE ?)';
+            sql += ' AND (nome LIKE ? OR cnpj_cpf LIKE ? OR telefone LIKE ? OR email LIKE ?)';
             const buscaParam = `%${busca}%`;
-            params.push(buscaParam, buscaParam, buscaParam, buscaParam);
+            args.push(buscaParam, buscaParam, buscaParam, buscaParam);
         }
 
-        query += ' ORDER BY nome ASC';
+        sql += ' ORDER BY nome ASC';
 
-        const clientes = db.prepare(query).all(...params);
-        res.json(clientes);
+        const result = await db.execute({ sql, args });
+        res.json(result.rows);
     } catch (error) {
         console.error('Erro ao listar clientes:', error);
         res.status(500).json({ error: 'Erro interno do servidor' });
     }
 });
 
-// Buscar cliente por ID (todos os usuários podem ver)
-router.get('/:id', (req, res) => {
+// Buscar cliente por ID
+router.get('/:id', async (req, res) => {
     try {
-        const cliente = db.prepare('SELECT * FROM clientes WHERE id = ?').get(req.params.id);
+        const result = await db.execute({
+            sql: 'SELECT * FROM clientes WHERE id = ?',
+            args: [req.params.id]
+        });
 
-        if (!cliente) {
+        if (result.rows.length === 0) {
             return res.status(404).json({ error: 'Cliente não encontrado' });
         }
 
-        // Buscar rádios alocados ao cliente
-        const radios = db.prepare("SELECT * FROM radios WHERE cliente_id = ? AND status = 'cliente'").all(req.params.id);
+        const cliente = result.rows[0];
 
-        res.json({ ...cliente, radios });
+        // Buscar rádios alocados ao cliente
+        const radiosResult = await db.execute({
+            sql: "SELECT * FROM radios WHERE cliente_id = ? AND status = 'cliente'",
+            args: [req.params.id]
+        });
+
+        res.json({ ...cliente, radios: radiosResult.rows });
     } catch (error) {
         console.error('Erro ao buscar cliente:', error);
         res.status(500).json({ error: 'Erro interno do servidor' });
@@ -50,7 +58,7 @@ router.get('/:id', (req, res) => {
 });
 
 // Criar novo cliente (admin only)
-router.post('/', requireAdmin, (req, res) => {
+router.post('/', requireAdmin, async (req, res) => {
     try {
         const { nome, cnpj_cpf, telefone, email, endereco } = req.body;
 
@@ -58,10 +66,10 @@ router.post('/', requireAdmin, (req, res) => {
             return res.status(400).json({ error: 'Nome é obrigatório' });
         }
 
-        const result = db.prepare(`
-            INSERT INTO clientes (nome, cnpj_cpf, telefone, email, endereco)
-            VALUES (?, ?, ?, ?, ?)
-        `).run(nome, cnpj_cpf || null, telefone || null, email || null, endereco || null);
+        const result = await db.execute({
+            sql: 'INSERT INTO clientes (nome, cnpj_cpf, telefone, email, endereco) VALUES (?, ?, ?, ?, ?)',
+            args: [nome, cnpj_cpf || null, telefone || null, email || null, endereco || null]
+        });
 
         res.status(201).json({
             id: result.lastInsertRowid,
@@ -78,28 +86,37 @@ router.post('/', requireAdmin, (req, res) => {
 });
 
 // Atualizar cliente (admin only)
-router.put('/:id', requireAdmin, (req, res) => {
+router.put('/:id', requireAdmin, async (req, res) => {
     try {
         const { nome, cnpj_cpf, telefone, email, endereco } = req.body;
         const { id } = req.params;
 
-        const cliente = db.prepare('SELECT id FROM clientes WHERE id = ?').get(id);
-        if (!cliente) {
+        const existsResult = await db.execute({
+            sql: 'SELECT id FROM clientes WHERE id = ?',
+            args: [id]
+        });
+
+        if (existsResult.rows.length === 0) {
             return res.status(404).json({ error: 'Cliente não encontrado' });
         }
 
-        db.prepare(`
-            UPDATE clientes 
-            SET nome = COALESCE(?, nome),
-                cnpj_cpf = COALESCE(?, cnpj_cpf),
-                telefone = COALESCE(?, telefone),
-                email = COALESCE(?, email),
-                endereco = COALESCE(?, endereco)
-            WHERE id = ?
-        `).run(nome, cnpj_cpf, telefone, email, endereco, id);
+        await db.execute({
+            sql: `UPDATE clientes 
+                  SET nome = COALESCE(?, nome),
+                      cnpj_cpf = COALESCE(?, cnpj_cpf),
+                      telefone = COALESCE(?, telefone),
+                      email = COALESCE(?, email),
+                      endereco = COALESCE(?, endereco)
+                  WHERE id = ?`,
+            args: [nome, cnpj_cpf, telefone, email, endereco, id]
+        });
 
-        const clienteAtualizado = db.prepare('SELECT * FROM clientes WHERE id = ?').get(id);
-        res.json(clienteAtualizado);
+        const updatedResult = await db.execute({
+            sql: 'SELECT * FROM clientes WHERE id = ?',
+            args: [id]
+        });
+
+        res.json(updatedResult.rows[0]);
     } catch (error) {
         console.error('Erro ao atualizar cliente:', error);
         res.status(500).json({ error: 'Erro interno do servidor' });
@@ -107,22 +124,34 @@ router.put('/:id', requireAdmin, (req, res) => {
 });
 
 // Deletar cliente (admin only)
-router.delete('/:id', requireAdmin, (req, res) => {
+router.delete('/:id', requireAdmin, async (req, res) => {
     try {
         const { id } = req.params;
 
-        const cliente = db.prepare('SELECT id FROM clientes WHERE id = ?').get(id);
-        if (!cliente) {
+        const existsResult = await db.execute({
+            sql: 'SELECT id FROM clientes WHERE id = ?',
+            args: [id]
+        });
+
+        if (existsResult.rows.length === 0) {
             return res.status(404).json({ error: 'Cliente não encontrado' });
         }
 
         // Verificar se há rádios alocados
-        const radios = db.prepare("SELECT id FROM radios WHERE cliente_id = ? AND status = 'cliente'").get(id);
-        if (radios) {
+        const radiosResult = await db.execute({
+            sql: "SELECT id FROM radios WHERE cliente_id = ? AND status = 'cliente'",
+            args: [id]
+        });
+
+        if (radiosResult.rows.length > 0) {
             return res.status(400).json({ error: 'Não é possível excluir cliente com rádios alocados' });
         }
 
-        db.prepare('DELETE FROM clientes WHERE id = ?').run(id);
+        await db.execute({
+            sql: 'DELETE FROM clientes WHERE id = ?',
+            args: [id]
+        });
+
         res.json({ message: 'Cliente excluído com sucesso' });
     } catch (error) {
         console.error('Erro ao deletar cliente:', error);

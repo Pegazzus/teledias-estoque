@@ -6,6 +6,95 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Rádios - Sistema de Estoque | Teledias Telecom</title>
     <link rel="stylesheet" href="css/style.css">
+    <style>
+        .bulk-actions {
+            position: fixed;
+            bottom: 2rem;
+            left: 50%;
+            transform: translateX(-50%);
+            background: linear-gradient(135deg, #1a365d 0%, #2d5a87 100%);
+            padding: 1rem 2rem;
+            border-radius: 1rem;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+            display: none;
+            align-items: center;
+            gap: 1rem;
+            z-index: 1000;
+            animation: slideUp 0.3s ease;
+        }
+
+        .bulk-actions.active {
+            display: flex;
+        }
+
+        .bulk-actions-count {
+            color: #fff;
+            font-weight: 600;
+            padding-right: 1rem;
+            border-right: 1px solid rgba(255, 255, 255, 0.3);
+        }
+
+        @keyframes slideUp {
+            from {
+                transform: translateX(-50%) translateY(100px);
+                opacity: 0;
+            }
+
+            to {
+                transform: translateX(-50%) translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .barcode-input {
+            position: relative;
+        }
+
+        .barcode-input::before {
+            content: '📟';
+            position: absolute;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 1.2rem;
+        }
+
+        .barcode-input input {
+            padding-left: 40px !important;
+            background: linear-gradient(135deg, #f0fff4 0%, #e6fffa 100%);
+            border: 2px solid #48bb78;
+        }
+
+        .barcode-input input:focus {
+            border-color: #38a169;
+            box-shadow: 0 0 0 3px rgba(72, 187, 120, 0.2);
+        }
+
+        .checkbox-cell {
+            width: 40px;
+            text-align: center;
+        }
+
+        .checkbox-cell input {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+        }
+
+        .export-btns {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .btn-excel {
+            background: linear-gradient(135deg, #22543d 0%, #276749 100%);
+            color: white;
+        }
+
+        .btn-excel:hover {
+            background: linear-gradient(135deg, #276749 0%, #2f855a 100%);
+        }
+    </style>
 </head>
 
 <body>
@@ -78,9 +167,27 @@
                 <div class="header-title">
                     <h1>Gestão de Rádios</h1>
                 </div>
+                <div class="header-actions export-btns">
+                    <button class="btn btn-excel" onclick="exportarExcel()">
+                        📊 Exportar Excel
+                    </button>
+                </div>
             </header>
 
             <div class="page-content">
+                <!-- Leitor de Código de Barras -->
+                <div class="card" style="margin-bottom: 1rem; padding: 1rem;">
+                    <div class="barcode-input">
+                        <input type="text" id="barcodeInput" class="form-control"
+                            placeholder="Escaneie o código de barras ou digite o código do rádio..."
+                            onkeypress="handleBarcodeInput(event)" autofocus>
+                    </div>
+                    <small style="color: var(--gray-500); margin-top: 0.5rem; display: block;">
+                        💡 Use um leitor de código de barras ou digite o código e pressione Enter para buscar
+                        rapidamente
+                    </small>
+                </div>
+
                 <div class="card">
                     <div class="card-header">
                         <h3 class="card-title">Rádios Cadastrados</h3>
@@ -105,6 +212,9 @@
                             <table>
                                 <thead>
                                     <tr>
+                                        <th class="checkbox-cell">
+                                            <input type="checkbox" id="selectAll" onchange="toggleSelectAll()">
+                                        </th>
                                         <th>Código</th>
                                         <th>Modelo</th>
                                         <th>Marca</th>
@@ -116,7 +226,7 @@
                                 </thead>
                                 <tbody id="radiosTableBody">
                                     <tr>
-                                        <td colspan="7">
+                                        <td colspan="8">
                                             <div class="empty-state">
                                                 <p>Carregando...</p>
                                             </div>
@@ -129,6 +239,17 @@
                 </div>
             </div>
         </main>
+    </div>
+
+    <!-- Barra de Ações em Lote -->
+    <div id="bulkActions" class="bulk-actions">
+        <span class="bulk-actions-count"><span id="selectedCount">0</span> selecionado(s)</span>
+        <button class="btn btn-success" onclick="bulkSaida()">📤 Saída em Lote</button>
+        <button class="btn btn-warning" onclick="bulkManutencao()">🔧 Manutenção em Lote</button>
+        <button class="btn btn-outline" onclick="bulkRetorno()" style="color:#fff;border-color:#fff;">📥 Retorno em
+            Lote</button>
+        <button class="btn btn-outline" onclick="clearSelection()" style="color:#fff;border-color:#fff;">✕
+            Limpar</button>
     </div>
 
     <!-- Modal Rádio -->
@@ -185,7 +306,7 @@
             </div>
             <div class="modal-body">
                 <form id="movForm">
-                    <input type="hidden" id="movRadioId">
+                    <input type="hidden" id="movRadioIds">
                     <input type="hidden" id="movTipo">
 
                     <div id="clienteField" class="form-group">
@@ -222,6 +343,7 @@
         setActiveNav();
 
         let clientes = [];
+        let selectedRadios = new Set();
 
         // Carregar rádios
         async function loadRadios() {
@@ -241,7 +363,7 @@
                 if (radios.length === 0) {
                     tbody.innerHTML = `
                         <tr>
-                            <td colspan="7">
+                            <td colspan="8">
                                 <div class="empty-state">
                                     <div class="empty-state-icon">📻</div>
                                     <h3>Nenhum rádio encontrado</h3>
@@ -255,6 +377,13 @@
 
                 tbody.innerHTML = radios.map(radio => `
                     <tr>
+                        <td class="checkbox-cell">
+                            <input type="checkbox" class="radio-checkbox" 
+                                   data-id="${radio.id}" 
+                                   data-status="${radio.status}"
+                                   onchange="updateSelection()"
+                                   ${selectedRadios.has(radio.id) ? 'checked' : ''}>
+                        </td>
                         <td><strong>${radio.codigo}</strong></td>
                         <td>${radio.modelo}</td>
                         <td>${radio.marca || '-'}</td>
@@ -264,8 +393,8 @@
                         <td>
                             <div class="action-btns">
                                 ${radio.status === 'estoque' ? `
-                                    <button class="btn btn-success btn-sm" onclick="openMovModal(${radio.id}, 'saida')" title="Registrar Saída">📤</button>
-                                    <button class="btn btn-warning btn-sm" onclick="openMovModal(${radio.id}, 'manutencao')" title="Enviar Manutenção">🔧</button>
+                                    <button class="btn btn-success btn-sm" onclick="openMovModal([${radio.id}], 'saida')" title="Registrar Saída">📤</button>
+                                    <button class="btn btn-warning btn-sm" onclick="openMovModal([${radio.id}], 'manutencao')" title="Enviar Manutenção">🔧</button>
                                 ` : ''}
                                 ${radio.status === 'cliente' ? `
                                     <button class="btn btn-success btn-sm" onclick="registrarRetorno(${radio.id})" title="Registrar Retorno">📥</button>
@@ -279,6 +408,153 @@
             } catch (error) {
                 showToast('Erro ao carregar rádios', 'error');
             }
+        }
+
+        // ===== CÓDIGO DE BARRAS =====
+        function handleBarcodeInput(event) {
+            if (event.key === 'Enter') {
+                const codigo = document.getElementById('barcodeInput').value.trim();
+                if (codigo) {
+                    buscarPorCodigo(codigo);
+                }
+            }
+        }
+
+        async function buscarPorCodigo(codigo) {
+            try {
+                const response = await fetchApi(`/api/radios/codigo/${encodeURIComponent(codigo)}`);
+
+                if (response.ok) {
+                    const radio = await response.json();
+                    document.getElementById('searchRadio').value = codigo;
+                    document.getElementById('barcodeInput').value = '';
+                    loadRadios();
+                    showToast(`Rádio ${radio.codigo} encontrado!`, 'success');
+
+                    // Mostrar opções rápidas
+                    if (radio.status === 'estoque') {
+                        if (confirm(`Rádio "${radio.codigo}" em estoque.\n\nDeseja registrar SAÍDA para cliente?`)) {
+                            openMovModal([radio.id], 'saida');
+                        }
+                    } else if (radio.status === 'cliente') {
+                        if (confirm(`Rádio "${radio.codigo}" com cliente: ${radio.cliente_nome}.\n\nDeseja registrar RETORNO ao estoque?`)) {
+                            registrarRetorno(radio.id);
+                        }
+                    }
+                } else {
+                    showToast(`Rádio "${codigo}" não encontrado`, 'error');
+                    document.getElementById('barcodeInput').value = '';
+                }
+            } catch (error) {
+                showToast('Erro ao buscar rádio', 'error');
+            }
+
+            document.getElementById('barcodeInput').focus();
+        }
+
+        // ===== SELEÇÃO MÚLTIPLA =====
+        function toggleSelectAll() {
+            const checkAll = document.getElementById('selectAll').checked;
+            const checkboxes = document.querySelectorAll('.radio-checkbox');
+
+            checkboxes.forEach(cb => {
+                cb.checked = checkAll;
+                if (checkAll) {
+                    selectedRadios.add(parseInt(cb.dataset.id));
+                } else {
+                    selectedRadios.delete(parseInt(cb.dataset.id));
+                }
+            });
+
+            updateBulkActions();
+        }
+
+        function updateSelection() {
+            selectedRadios.clear();
+            document.querySelectorAll('.radio-checkbox:checked').forEach(cb => {
+                selectedRadios.add(parseInt(cb.dataset.id));
+            });
+            updateBulkActions();
+        }
+
+        function updateBulkActions() {
+            const bulkDiv = document.getElementById('bulkActions');
+            const countSpan = document.getElementById('selectedCount');
+
+            if (selectedRadios.size > 0) {
+                bulkDiv.classList.add('active');
+                countSpan.textContent = selectedRadios.size;
+            } else {
+                bulkDiv.classList.remove('active');
+            }
+        }
+
+        function clearSelection() {
+            selectedRadios.clear();
+            document.querySelectorAll('.radio-checkbox').forEach(cb => cb.checked = false);
+            document.getElementById('selectAll').checked = false;
+            updateBulkActions();
+        }
+
+        function bulkSaida() {
+            const estoqueIds = getSelectedByStatus('estoque');
+            if (estoqueIds.length === 0) {
+                showToast('Selecione rádios em estoque para saída', 'warning');
+                return;
+            }
+            openMovModal(estoqueIds, 'saida');
+        }
+
+        function bulkManutencao() {
+            const estoqueIds = getSelectedByStatus('estoque');
+            if (estoqueIds.length === 0) {
+                showToast('Selecione rádios em estoque para manutenção', 'warning');
+                return;
+            }
+            openMovModal(estoqueIds, 'manutencao');
+        }
+
+        async function bulkRetorno() {
+            const clienteIds = getSelectedByStatus('cliente');
+            if (clienteIds.length === 0) {
+                showToast('Selecione rádios com cliente para retorno', 'warning');
+                return;
+            }
+
+            if (!confirm(`Confirmar retorno de ${clienteIds.length} rádio(s) ao estoque?`)) return;
+
+            try {
+                const response = await fetchApi('/api/radios/lote/retorno', {
+                    method: 'POST',
+                    body: JSON.stringify({ radio_ids: clienteIds })
+                });
+                const result = await response.json();
+                showToast(result.message, 'success');
+                clearSelection();
+                loadRadios();
+            } catch (error) {
+                showToast('Erro ao registrar retornos', 'error');
+            }
+        }
+
+        function getSelectedByStatus(status) {
+            const ids = [];
+            document.querySelectorAll('.radio-checkbox:checked').forEach(cb => {
+                if (cb.dataset.status === status) {
+                    ids.push(parseInt(cb.dataset.id));
+                }
+            });
+            return ids;
+        }
+
+        // ===== EXPORTAR EXCEL =====
+        function exportarExcel() {
+            const status = document.getElementById('filterStatus').value;
+            let url = '/api/relatorios/radios';
+            if (status !== 'todos') url += `?status=${status}`;
+
+            window.location.href = url;
+            showToast('Gerando relatório Excel...', 'success');
         }
 
         // Carregar clientes para select
@@ -390,21 +666,22 @@
         }
 
         // Modal de movimentação
-        function openMovModal(radioId, tipo) {
+        function openMovModal(radioIds, tipo) {
             const modal = document.getElementById('movModal');
             const title = document.getElementById('movModalTitle');
+            const isMultiple = radioIds.length > 1;
 
-            document.getElementById('movRadioId').value = radioId;
+            document.getElementById('movRadioIds').value = JSON.stringify(radioIds);
             document.getElementById('movTipo').value = tipo;
             document.getElementById('movObservacoes').value = '';
 
             if (tipo === 'saida') {
-                title.textContent = 'Registrar Saída para Cliente';
+                title.textContent = isMultiple ? `Saída em Lote (${radioIds.length} rádios)` : 'Registrar Saída para Cliente';
                 document.getElementById('clienteField').style.display = 'block';
                 document.getElementById('descricaoField').style.display = 'none';
                 document.getElementById('movSubmitBtn').className = 'btn btn-success';
             } else if (tipo === 'manutencao') {
-                title.textContent = 'Enviar para Manutenção';
+                title.textContent = isMultiple ? `Manutenção em Lote (${radioIds.length} rádios)` : 'Enviar para Manutenção';
                 document.getElementById('clienteField').style.display = 'none';
                 document.getElementById('descricaoField').style.display = 'block';
                 document.getElementById('movSubmitBtn').className = 'btn btn-warning';
@@ -418,9 +695,10 @@
         }
 
         async function saveMovimentacao() {
-            const radioId = document.getElementById('movRadioId').value;
+            const radioIds = JSON.parse(document.getElementById('movRadioIds').value);
             const tipo = document.getElementById('movTipo').value;
             const observacoes = document.getElementById('movObservacoes').value;
+            const isMultiple = radioIds.length > 1;
 
             try {
                 let url, data;
@@ -431,16 +709,28 @@
                         showToast('Selecione um cliente', 'warning');
                         return;
                     }
-                    url = '/api/movimentacoes/saida';
-                    data = { radio_id: parseInt(radioId), cliente_id: parseInt(clienteId), observacoes };
+
+                    if (isMultiple) {
+                        url = '/api/radios/lote/saida';
+                        data = { radio_ids: radioIds, cliente_id: parseInt(clienteId), observacoes };
+                    } else {
+                        url = '/api/movimentacoes/saida';
+                        data = { radio_id: radioIds[0], cliente_id: parseInt(clienteId), observacoes };
+                    }
                 } else if (tipo === 'manutencao') {
                     const descricao = document.getElementById('movDescricao').value;
                     if (!descricao) {
                         showToast('Informe a descrição do problema', 'warning');
                         return;
                     }
-                    url = '/api/movimentacoes/manutencao';
-                    data = { radio_id: parseInt(radioId), descricao, observacoes };
+
+                    if (isMultiple) {
+                        url = '/api/radios/lote/manutencao';
+                        data = { radio_ids: radioIds, descricao, observacoes };
+                    } else {
+                        url = '/api/movimentacoes/manutencao';
+                        data = { radio_id: radioIds[0], descricao, observacoes };
+                    }
                 }
 
                 const response = await fetchApi(url, {
@@ -455,6 +745,7 @@
 
                 showToast('Movimentação registrada!', 'success');
                 closeMovModal();
+                clearSelection();
                 loadRadios();
             } catch (error) {
                 showToast(error.message, 'error');
@@ -485,6 +776,9 @@
         // Inicializar
         loadRadios();
         loadClientes();
+
+        // Foco no campo de código de barras
+        document.getElementById('barcodeInput').focus();
     </script>
 </body>
 

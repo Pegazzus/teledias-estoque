@@ -1,13 +1,41 @@
 const express = require('express');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const db = require('../models/database');
-const { JWT_SECRET, authMiddleware, requireAdmin } = require('../middleware/auth');
+const { db } = require('../models/database');
 
 const router = express.Router();
 
+const JWT_SECRET = process.env.JWT_SECRET || 'teledias-secret-key-2024';
+
+// Middleware de autenticação
+const authMiddleware = async (req, res, next) => {
+    try {
+        const token = req.headers.authorization?.split(' ')[1];
+
+        if (!token) {
+            return res.status(401).json({ error: 'Token não fornecido' });
+        }
+
+        const decoded = jwt.verify(token, JWT_SECRET);
+        req.userId = decoded.id;
+        req.userName = decoded.nome;
+        req.userCargo = decoded.cargo;
+        next();
+    } catch (error) {
+        return res.status(401).json({ error: 'Token inválido' });
+    }
+};
+
+// Middleware de admin
+const requireAdmin = (req, res, next) => {
+    if (req.userCargo !== 'admin') {
+        return res.status(403).json({ error: 'Acesso negado. Apenas administradores podem realizar esta ação.' });
+    }
+    next();
+};
+
 // Login
-router.post('/login', (req, res) => {
+router.post('/login', async (req, res) => {
     try {
         const { email, senha } = req.body;
 
@@ -15,7 +43,12 @@ router.post('/login', (req, res) => {
             return res.status(400).json({ error: 'Email e senha são obrigatórios' });
         }
 
-        const usuario = db.prepare('SELECT * FROM usuarios WHERE email = ?').get(email);
+        const result = await db.execute({
+            sql: 'SELECT * FROM usuarios WHERE email = ?',
+            args: [email]
+        });
+
+        const usuario = result.rows[0];
 
         if (!usuario) {
             return res.status(401).json({ error: 'Credenciais inválidas' });
@@ -59,10 +92,10 @@ router.get('/verificar', authMiddleware, (req, res) => {
 });
 
 // Listar todos os usuários (admin only)
-router.get('/usuarios', authMiddleware, requireAdmin, (req, res) => {
+router.get('/usuarios', authMiddleware, requireAdmin, async (req, res) => {
     try {
-        const usuarios = db.prepare('SELECT id, nome, email, cargo, created_at FROM usuarios ORDER BY created_at DESC').all();
-        res.json(usuarios);
+        const result = await db.execute('SELECT id, nome, email, cargo, created_at FROM usuarios ORDER BY created_at DESC');
+        res.json(result.rows);
     } catch (error) {
         console.error('Erro ao listar usuários:', error);
         res.status(500).json({ error: 'Erro interno do servidor' });
@@ -70,7 +103,7 @@ router.get('/usuarios', authMiddleware, requireAdmin, (req, res) => {
 });
 
 // Registrar novo usuário (admin only)
-router.post('/registrar', authMiddleware, requireAdmin, (req, res) => {
+router.post('/registrar', authMiddleware, requireAdmin, async (req, res) => {
     try {
         const { nome, email, senha, cargo } = req.body;
 
@@ -78,16 +111,22 @@ router.post('/registrar', authMiddleware, requireAdmin, (req, res) => {
             return res.status(400).json({ error: 'Todos os campos são obrigatórios' });
         }
 
-        const usuarioExiste = db.prepare('SELECT id FROM usuarios WHERE email = ?').get(email);
+        const existsResult = await db.execute({
+            sql: 'SELECT id FROM usuarios WHERE email = ?',
+            args: [email]
+        });
 
-        if (usuarioExiste) {
+        if (existsResult.rows.length > 0) {
             return res.status(400).json({ error: 'Email já cadastrado' });
         }
 
         const senhaHash = bcrypt.hashSync(senha, 10);
         const cargoUsuario = cargo || 'operador';
 
-        const result = db.prepare('INSERT INTO usuarios (nome, email, senha, cargo) VALUES (?, ?, ?, ?)').run(nome, email, senhaHash, cargoUsuario);
+        const result = await db.execute({
+            sql: 'INSERT INTO usuarios (nome, email, senha, cargo) VALUES (?, ?, ?, ?)',
+            args: [nome, email, senhaHash, cargoUsuario]
+        });
 
         res.status(201).json({
             id: result.lastInsertRowid,
@@ -102,22 +141,27 @@ router.post('/registrar', authMiddleware, requireAdmin, (req, res) => {
 });
 
 // Excluir usuário (admin only)
-router.delete('/usuarios/:id', authMiddleware, requireAdmin, (req, res) => {
+router.delete('/usuarios/:id', authMiddleware, requireAdmin, async (req, res) => {
     try {
         const { id } = req.params;
 
-        // Não permitir excluir o próprio usuário
         if (parseInt(id) === req.userId) {
             return res.status(400).json({ error: 'Você não pode excluir seu próprio usuário' });
         }
 
-        const usuario = db.prepare('SELECT id FROM usuarios WHERE id = ?').get(id);
+        const result = await db.execute({
+            sql: 'SELECT id FROM usuarios WHERE id = ?',
+            args: [id]
+        });
 
-        if (!usuario) {
+        if (result.rows.length === 0) {
             return res.status(404).json({ error: 'Usuário não encontrado' });
         }
 
-        db.prepare('DELETE FROM usuarios WHERE id = ?').run(id);
+        await db.execute({
+            sql: 'DELETE FROM usuarios WHERE id = ?',
+            args: [id]
+        });
 
         res.json({ message: 'Usuário excluído com sucesso' });
     } catch (error) {
@@ -127,3 +171,6 @@ router.delete('/usuarios/:id', authMiddleware, requireAdmin, (req, res) => {
 });
 
 module.exports = router;
+module.exports.authMiddleware = authMiddleware;
+module.exports.requireAdmin = requireAdmin;
+module.exports.JWT_SECRET = JWT_SECRET;
