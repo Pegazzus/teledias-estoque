@@ -73,7 +73,7 @@ router.post('/saida', async (req, res) => {
         });
 
         res.status(201).json({
-            id: result.lastInsertRowid,
+            id: Number(result.lastInsertRowid),
             message: 'Saída registrada com sucesso'
         });
     } catch (error) {
@@ -114,7 +114,7 @@ router.post('/retorno', async (req, res) => {
         });
 
         res.status(201).json({
-            id: result.lastInsertRowid,
+            id: Number(result.lastInsertRowid),
             message: 'Retorno registrado com sucesso'
         });
     } catch (error) {
@@ -161,7 +161,7 @@ router.post('/manutencao', async (req, res) => {
         });
 
         res.status(201).json({
-            id: result.lastInsertRowid,
+            id: Number(result.lastInsertRowid),
             message: 'Enviado para manutenção com sucesso'
         });
     } catch (error) {

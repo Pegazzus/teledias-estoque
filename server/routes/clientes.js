@@ -72,7 +72,7 @@ router.post('/', requireAdmin, async (req, res) => {
         });
 
         res.status(201).json({
-            id: result.lastInsertRowid,
+            id: Number(result.lastInsertRowid),
             nome,
             cnpj_cpf,
             telefone,

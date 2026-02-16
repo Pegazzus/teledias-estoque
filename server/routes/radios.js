@@ -15,10 +15,10 @@ router.get('/stats/resumo', async (req, res) => {
         const manutencaoResult = await db.execute("SELECT COUNT(*) as count FROM radios WHERE status = 'manutencao'");
 
         res.json({
-            total: totalResult.rows[0].count,
-            estoque: estoqueResult.rows[0].count,
-            cliente: clienteResult.rows[0].count,
-            manutencao: manutencaoResult.rows[0].count
+            total: Number(totalResult.rows[0].count),
+            estoque: Number(estoqueResult.rows[0].count),
+            cliente: Number(clienteResult.rows[0].count),
+            manutencao: Number(manutencaoResult.rows[0].count)
         });
     } catch (error) {
         console.error('Erro ao buscar estatísticas:', error);
@@ -129,7 +129,7 @@ router.post('/', async (req, res) => {
         });
 
         res.status(201).json({
-            id: result.lastInsertRowid,
+            id: Number(result.lastInsertRowid),
             codigo,
             modelo,
             marca,
@@ -208,18 +208,32 @@ router.delete('/:id', async (req, res) => {
         }
 
         if (existsResult.rows[0].status !== 'estoque') {
-            return res.status(400).json({ error: 'Apenas rádios em estoque podem ser excluídos' });
+            return res.status(400).json({ error: 'Apenas rádios em estoque podem ser excluídos o registro.' });
         }
 
+        // Remover dependências (Cascading Delete manual para evitar erro de FK)
+        // 1. Remover movimentações
+        await db.execute({
+            sql: 'DELETE FROM movimentacoes WHERE radio_id = ?',
+            args: [id]
+        });
+
+        // 2. Remover manutenções
+        await db.execute({
+            sql: 'DELETE FROM manutencoes WHERE radio_id = ?',
+            args: [id]
+        });
+
+        // 3. Remover o rádio
         await db.execute({
             sql: 'DELETE FROM radios WHERE id = ?',
             args: [id]
         });
 
-        res.json({ message: 'Rádio excluído com sucesso' });
+        res.json({ message: 'Rádio e seu histórico excluídos com sucesso' });
     } catch (error) {
         console.error('Erro ao deletar rádio:', error);
-        res.status(500).json({ error: 'Erro interno do servidor' });
+        res.status(500).json({ error: 'Erro interno do servidor ao excluir rádio' });
     }
 });
 

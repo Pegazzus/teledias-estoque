@@ -129,7 +129,7 @@ router.post('/registrar', authMiddleware, requireAdmin, async (req, res) => {
         });
 
         res.status(201).json({
-            id: result.lastInsertRowid,
+            id: Number(result.lastInsertRowid),
             nome,
             email,
             cargo: cargoUsuario

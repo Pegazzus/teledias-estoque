@@ -1,0 +1,1087 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cotações Automáticas - Teledias Telecom</title>
+    <meta name="description" content="Sistema automático de cotação com preços reais de lojas brasileiras">
+    <meta name="referrer" content="no-referrer">
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        /* === HERO === */
+        .cotacao-hero {
+            background: linear-gradient(135deg, #1a202c 0%, #2d3748 40%, #4a5568 100%);
+            border-radius: 16px;
+            padding: 44px 32px 36px;
+            color: white;
+            text-align: center;
+            margin-bottom: 24px;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+        }
+
+        .cotacao-hero::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle at 30% 50%, rgba(49, 130, 206, 0.12) 0%, transparent 60%),
+                radial-gradient(circle at 70% 80%, rgba(72, 187, 120, 0.08) 0%, transparent 50%);
+            animation: heroGlow 12s ease-in-out infinite alternate;
+        }
+
+        @keyframes heroGlow {
+            0% {
+                transform: translate(-5%, -5%)scale(1)
+            }
+
+            100% {
+                transform: translate(5%, 5%)scale(1.05)
+            }
+        }
+
+        .cotacao-hero h1 {
+            font-size: 24px;
+            margin-bottom: 4px;
+            position: relative;
+            z-index: 1;
+            font-weight: 800;
+        }
+
+        .cotacao-hero .sub {
+            opacity: 0.6;
+            font-size: 13px;
+            position: relative;
+            z-index: 1;
+            margin-bottom: 24px;
+        }
+
+        .search-form {
+            position: relative;
+            z-index: 1;
+            max-width: 660px;
+            margin: 0 auto;
+        }
+
+        .search-row {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        .search-row input[type="text"] {
+            flex: 1;
+            padding: 14px 18px;
+            font-size: 15px;
+            font-family: inherit;
+            border: 2px solid rgba(255, 255, 255, 0.15);
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.08);
+            color: white;
+            backdrop-filter: blur(10px);
+            transition: all 0.3s;
+        }
+
+        .search-row input::placeholder {
+            color: rgba(255, 255, 255, 0.4);
+        }
+
+        .search-row input:focus {
+            outline: none;
+            border-color: rgba(72, 187, 120, 0.6);
+            background: rgba(255, 255, 255, 0.14);
+        }
+
+        .btn-search {
+            padding: 14px 28px;
+            background: linear-gradient(135deg, #48bb78, #38a169);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 15px;
+            font-weight: 700;
+            cursor: pointer;
+            font-family: inherit;
+            box-shadow: 0 4px 15px rgba(72, 187, 120, 0.3);
+            transition: all 0.3s;
+            white-space: nowrap;
+        }
+
+        .btn-search:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(72, 187, 120, 0.4);
+        }
+
+        .btn-search:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .search-extras {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+        }
+
+        .search-extras input {
+            padding: 10px 16px;
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.06);
+            color: white;
+            font-size: 13px;
+            font-family: inherit;
+        }
+
+        .search-extras input::placeholder {
+            color: rgba(255, 255, 255, 0.35);
+        }
+
+        .search-extras input:focus {
+            outline: none;
+            border-color: rgba(255, 255, 255, 0.3);
+        }
+
+        .verified-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            background: rgba(72, 187, 120, 0.15);
+            border: 1px solid rgba(72, 187, 120, 0.3);
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 11px;
+            color: #68d391;
+            margin-top: 14px;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* === PROGRESS === */
+        .progress-box {
+            background: var(--bg-primary, white);
+            border-radius: 14px;
+            padding: 24px;
+            margin-bottom: 24px;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+            display: none;
+            border: 1px solid var(--border-color, #e2e8f0);
+        }
+
+        .progress-box.show {
+            display: block;
+        }
+
+        .progress-box h3 {
+            font-size: 16px;
+            font-weight: 700;
+            margin-bottom: 16px;
+            color: #2d3748;
+        }
+
+        .p-step {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 14px;
+            border-radius: 8px;
+            font-size: 14px;
+            color: #a0aec0;
+            transition: all 0.4s;
+            margin-bottom: 4px;
+        }
+
+        .p-step.active {
+            background: #ebf8ff;
+            color: #2b6cb0;
+            font-weight: 600;
+        }
+
+        .p-step.done {
+            background: #f0fff4;
+            color: #276749;
+        }
+
+        .p-step .ico {
+            font-size: 18px;
+            min-width: 24px;
+            text-align: center;
+        }
+
+        .p-step.active .ico {
+            animation: blink 1.2s ease-in-out infinite;
+        }
+
+        @keyframes blink {
+
+            0%,
+            100% {
+                opacity: 1
+            }
+
+            50% {
+                opacity: 0.3
+            }
+        }
+
+        /* === RESULTS === */
+        .results-box {
+            display: none;
+        }
+
+        .results-box.show {
+            display: block;
+        }
+
+        .results-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 18px;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .results-top h2 {
+            font-size: 18px;
+            color: #2d3748;
+            font-weight: 700;
+        }
+
+        .results-btns {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .r-btn {
+            padding: 9px 16px;
+            border: none;
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-family: inherit;
+            color: white;
+        }
+
+        .r-btn:hover {
+            transform: translateY(-1px);
+            filter: brightness(1.1);
+        }
+
+        .r-btn.ia {
+            background: linear-gradient(135deg, #805ad5, #6b46c1);
+        }
+
+        .r-btn.xl {
+            background: linear-gradient(135deg, #38a169, #2f855a);
+        }
+
+        .r-btn.nv {
+            background: linear-gradient(135deg, #3182ce, #2b6cb0);
+        }
+
+        /* Summary */
+        .summary-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(145px, 1fr));
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .s-card {
+            background: var(--bg-primary, white);
+            border-radius: 12px;
+            padding: 18px;
+            text-align: center;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+            border: 1px solid var(--border-color, #e2e8f0);
+            transition: transform 0.2s;
+        }
+
+        .s-card:hover {
+            transform: translateY(-2px);
+        }
+
+        .s-card.best {
+            border-color: #48bb78;
+            border-width: 2px;
+            background: linear-gradient(135deg, #f0fff4, #fff);
+        }
+
+        .s-card .val {
+            font-size: 22px;
+            font-weight: 800;
+            color: #1a202c;
+        }
+
+        .s-card.best .val {
+            color: #22543d;
+        }
+
+        .s-card .lbl {
+            font-size: 11px;
+            color: #a0aec0;
+            margin-top: 4px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        /* Product cards */
+        .product-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .product-card {
+            background: var(--bg-primary, white);
+            border-radius: 14px;
+            padding: 16px 20px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.04);
+            border: 1px solid var(--border-color, #e2e8f0);
+            display: grid;
+            grid-template-columns: 70px 1fr auto;
+            gap: 16px;
+            align-items: center;
+            transition: all 0.25s;
+            position: relative;
+        }
+
+        .product-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08);
+        }
+
+        .product-card.best-price {
+            border-left: 4px solid #48bb78;
+            background: linear-gradient(135deg, #f0fff4, #fff);
+        }
+
+        .product-card.no-img {
+            grid-template-columns: 1fr auto;
+        }
+
+        .best-badge {
+            position: absolute;
+            top: 8px;
+            right: 12px;
+            background: linear-gradient(135deg, #48bb78, #38a169);
+            color: white;
+            padding: 3px 10px;
+            border-radius: 20px;
+            font-size: 10px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .source-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 3px;
+            font-size: 10px;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-weight: 600;
+        }
+
+        .source-badge.verified {
+            background: #c6f6d5;
+            color: #22543d;
+        }
+
+        .source-badge.scraping {
+            background: #bee3f8;
+            color: #2a4365;
+        }
+
+        .source-badge.google {
+            background: #feebc8;
+            color: #7b341e;
+        }
+
+        .p-img {
+            width: 70px;
+            height: 70px;
+            border-radius: 10px;
+            overflow: hidden;
+            background: #f7fafc;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .p-img img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+
+        .p-img .no-img-icon {
+            font-size: 28px;
+            opacity: 0.3;
+        }
+
+        .p-info h3 {
+            font-size: 14px;
+            font-weight: 600;
+            color: #2d3748;
+            margin-bottom: 4px;
+            line-height: 1.4;
+        }
+
+        .p-store {
+            font-size: 13px;
+            color: #718096;
+            margin-bottom: 6px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .p-store strong {
+            color: #4a5568;
+        }
+
+        .p-meta {
+            display: flex;
+            gap: 14px;
+            flex-wrap: wrap;
+        }
+
+        .p-meta span {
+            font-size: 12px;
+            color: #a0aec0;
+        }
+
+        .p-meta span b {
+            color: #718096;
+            font-weight: 600;
+        }
+
+        .p-price {
+            text-align: right;
+            min-width: 140px;
+        }
+
+        .p-price .amount {
+            font-size: 24px;
+            font-weight: 800;
+            color: #1a202c;
+        }
+
+        .product-card.best-price .p-price .amount {
+            color: #22543d;
+        }
+
+        .p-price .buy-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            margin-top: 8px;
+            padding: 8px 18px;
+            background: linear-gradient(135deg, #3182ce, #2b6cb0);
+            color: white;
+            border-radius: 10px;
+            text-decoration: none;
+            font-size: 12px;
+            font-weight: 700;
+            transition: all 0.2s;
+            box-shadow: 0 3px 10px rgba(49, 130, 206, 0.2);
+        }
+
+        .p-price .buy-link:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(49, 130, 206, 0.3);
+        }
+
+        .product-card.best-price .p-price .buy-link {
+            background: linear-gradient(135deg, #48bb78, #38a169);
+            box-shadow: 0 3px 10px rgba(72, 187, 120, 0.2);
+        }
+
+        /* Quick search links */
+        .quick-search {
+            background: var(--bg-primary, white);
+            border-radius: 14px;
+            padding: 20px 24px;
+            margin-top: 16px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.04);
+            border: 1px solid var(--border-color, #e2e8f0);
+        }
+
+        .quick-search h4 {
+            font-size: 14px;
+            color: #4a5568;
+            margin-bottom: 12px;
+            font-weight: 700;
+        }
+
+        .quick-links {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .q-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 8px 14px;
+            background: #edf2f7;
+            border-radius: 8px;
+            text-decoration: none;
+            font-size: 12px;
+            font-weight: 600;
+            color: #4a5568;
+            transition: all 0.2s;
+            border: 1px solid #e2e8f0;
+        }
+
+        .q-link:hover {
+            background: #e2e8f0;
+            transform: translateY(-1px);
+        }
+
+        /* AI box */
+        .ai-box {
+            display: none;
+            background: var(--bg-primary, white);
+            border-radius: 14px;
+            padding: 24px;
+            margin-top: 20px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.04);
+            border: 1px solid var(--border-color, #e2e8f0);
+            border-left: 4px solid #805ad5;
+        }
+
+        .ai-box.show {
+            display: block;
+        }
+
+        .ai-box h3 {
+            color: #553c9a;
+            margin-bottom: 12px;
+            font-size: 16px;
+        }
+
+        .ai-text {
+            line-height: 1.8;
+            color: #4a5568;
+            font-size: 14px;
+            white-space: pre-wrap;
+        }
+
+        /* History */
+        .history-area {
+            margin-top: 32px;
+        }
+
+        .history-area h2 {
+            font-size: 17px;
+            color: #2d3748;
+            margin-bottom: 14px;
+            font-weight: 700;
+        }
+
+        .h-item {
+            background: var(--bg-primary, white);
+            border-radius: 12px;
+            padding: 14px 18px;
+            margin-bottom: 8px;
+            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+            border: 1px solid var(--border-color, #e2e8f0);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .h-item:hover {
+            transform: translateX(4px);
+            box-shadow: 0 3px 12px rgba(0, 0, 0, 0.06);
+        }
+
+        .h-item .h-info h4 {
+            font-size: 14px;
+            color: #2d3748;
+            margin-bottom: 2px;
+            font-weight: 600;
+        }
+
+        .h-item .h-info span {
+            font-size: 12px;
+            color: #a0aec0;
+        }
+
+        .h-item .h-meta {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .h-badge {
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
+
+        .h-badge.aberta {
+            background: #ebf8ff;
+            color: #2b6cb0;
+        }
+
+        .h-badge.finalizada {
+            background: #f0fff4;
+            color: #22543d;
+        }
+
+        .h-badge.cancelada {
+            background: #fff5f5;
+            color: #c53030;
+        }
+
+        .h-del {
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 14px;
+            opacity: 0.3;
+            transition: all 0.2s;
+            padding: 4px;
+        }
+
+        .h-del:hover {
+            opacity: 1;
+        }
+
+        .spin {
+            animation: rotate 1s linear infinite;
+            display: inline-block;
+        }
+
+        @keyframes rotate {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .cotacao-hero {
+                padding: 24px 16px;
+            }
+
+            .search-row {
+                flex-direction: column;
+            }
+
+            .product-card {
+                grid-template-columns: 1fr;
+            }
+
+            .product-card.no-img {
+                grid-template-columns: 1fr;
+            }
+
+            .p-price {
+                text-align: left;
+            }
+
+            .p-img {
+                width: 100%;
+                height: 120px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="app-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <div class="sidebar-logo">
+                    <img src="img/logo.png" alt="Teledias" class="sidebar-logo-img" style="width:50px;height:auto;">
+                    <div class="sidebar-logo-text">
+                        <h2>Teledias</h2>
+                        <span>Sistema de Estoque</span>
+                    </div>
+                </div>
+            </div>
+            <nav class="sidebar-nav">
+                <div class="nav-section">
+                    <div class="nav-section-title">Menu Principal</div>
+                    <a href="dashboard.html" class="nav-link"><span class="nav-link-icon">📊</span>Dashboard</a>
+                    <a href="radios.html" class="nav-link"><span class="nav-link-icon">📻</span>Rádios</a>
+                    <a href="clientes.html" class="nav-link"><span class="nav-link-icon">👥</span>Clientes</a>
+                    <a href="movimentacoes.html" class="nav-link"><span class="nav-link-icon">🔄</span>Movimentações</a>
+                </div>
+                <div class="nav-section">
+                    <div class="nav-section-title">Cotações</div>
+                    <a href="cotacoes.html" class="nav-link"><span class="nav-link-icon">💰</span>Cotações</a>
+                    <a href="fornecedores.html" class="nav-link"><span class="nav-link-icon">🏭</span>Fornecedores</a>
+                </div>
+                <div class="nav-section">
+                    <div class="nav-section-title">Manutenção</div>
+                    <a href="manutencoes.html" class="nav-link"><span class="nav-link-icon">🔧</span>Manutenções</a>
+                </div>
+                <div class="nav-section admin-only">
+                    <div class="nav-section-title">Administração</div>
+                    <a href="usuarios.html" class="nav-link"><span class="nav-link-icon">👤</span>Usuários</a>
+                </div>
+            </nav>
+            <div class="sidebar-footer">
+                <div class="user-info">
+                    <div class="user-avatar">A</div>
+                    <div class="user-details">
+                        <div class="user-name">Administrador</div>
+                        <div class="user-role">Admin</div>
+                    </div>
+                    <button class="btn-logout" onclick="logout()" title="Sair">🚪</button>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main -->
+        <main class="main-content">
+            <header class="header">
+                <div class="header-title">
+                    <h1>💰 Cotação Automática</h1>
+                </div>
+            </header>
+
+            <div class="page-content">
+                <!-- Hero -->
+                <div class="cotacao-hero">
+                    <h1>🔍 Cotação Automática de Preços</h1>
+                    <p class="sub">Preços reais de lojas brasileiras via API — sem estimativas</p>
+                    <div class="search-form">
+                        <div class="search-row">
+                            <input type="text" id="searchProduct"
+                                placeholder="Ex: iPhone 17 Pro, Notebook Dell, Rádio Motorola..."
+                                onkeydown="if(event.key==='Enter') buscarPrecos()">
+                            <button class="btn-search" id="btnSearch" onclick="buscarPrecos()">🔍 Buscar Preços</button>
+                        </div>
+                        <div class="search-extras">
+                            <input type="text" id="searchSpecs" placeholder="Especificações (opcional)"
+                                style="flex:2;min-width:200px;">
+                            <input type="number" id="searchQty" placeholder="Qtd" style="width:80px;" min="1" value="1">
+                        </div>
+                        <div class="verified-badge">✅ Preços verificados via API do Mercado Livre, Amazon e outras lojas
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Progress -->
+                <div class="progress-box" id="progressBox">
+                    <h3>📡 Buscando preços reais nas lojas...</h3>
+                    <div id="progressSteps">
+                        <div class="p-step" id="step1"><span class="ico">🏪</span><span>Consultando Mercado Livre
+                                (API)...</span></div>
+                        <div class="p-step" id="step2"><span class="ico">📦</span><span>Consultando Amazon
+                                Brasil...</span></div>
+                        <div class="p-step" id="step3"><span class="ico">💻</span><span>Consultando Kabum e Google
+                                Shopping...</span></div>
+                        <div class="p-step" id="step4"><span class="ico">🤖</span><span>IA analisando
+                                resultados...</span></div>
+                    </div>
+                </div>
+
+                <!-- Results -->
+                <div class="results-box" id="resultsBox">
+                    <div class="results-top">
+                        <h2 id="resultsTitle">📊 Resultados</h2>
+                        <div class="results-btns">
+                            <button class="r-btn ia" onclick="analisarIA()">🤖 Análise IA</button>
+                            <button class="r-btn xl" onclick="exportarExcel()">📥 Excel</button>
+                            <button class="r-btn nv" onclick="novaBusca()">🔍 Nova Busca</button>
+                        </div>
+                    </div>
+                    <div class="summary-row" id="summaryRow"></div>
+                    <div class="product-grid" id="productGrid"></div>
+
+                    <!-- Quick search -->
+                    <div class="quick-search" id="quickSearchBox" style="display:none;">
+                        <h4>🔗 Pesquisar manualmente em outras lojas</h4>
+                        <div class="quick-links" id="quickLinks"></div>
+                    </div>
+
+                    <!-- AI Analysis -->
+                    <div class="ai-box" id="aiBox">
+                        <h3>🤖 Análise da Inteligência Artificial</h3>
+                        <div class="ai-text" id="aiText"></div>
+                    </div>
+                </div>
+
+                <!-- History -->
+                <div class="history-area">
+                    <h2>📋 Histórico de Cotações</h2>
+                    <div id="historyList"></div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="js/auth.js"></script>
+    <script>
+        if (!requireAuth()) throw new Error('Auth');
+        initUserInfo();
+        setActiveNav();
+
+        let currentCotacaoId = null;
+
+        // === BUSCA ===
+        async function buscarPrecos() {
+            const produto = document.getElementById('searchProduct').value.trim();
+            const especificacoes = document.getElementById('searchSpecs').value.trim();
+            const quantidade = parseInt(document.getElementById('searchQty').value) || 1;
+
+            if (!produto || produto.length < 3) { showToast('Digite o nome do produto (mínimo 3 caracteres)', 'warning'); return; }
+
+            const btn = document.getElementById('btnSearch');
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spin">⏳</span> Buscando...';
+            showProgress(); hideResults();
+
+            try {
+                animateStep(1); await sleep(600);
+                animateStep(2);
+
+                const response = await fetch(`${API_URL}/api/cotacoes/buscar-precos`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${getToken()}` },
+                    body: JSON.stringify({ produto, especificacoes, quantidade })
+                });
+
+                animateStep(3);
+                if (!response.ok) { const e = await response.json(); throw new Error(e.error || 'Erro ao buscar'); }
+                const data = await response.json();
+                animateStep(4); await sleep(400);
+
+                currentCotacaoId = data.cotacao_id;
+                renderResults(data);
+                loadHistory();
+            } catch (error) {
+                console.error('Erro:', error);
+                showToast('Erro: ' + error.message, 'error');
+                hideProgress();
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '🔍 Buscar Preços';
+            }
+        }
+
+        // === PROGRESS ===
+        function showProgress() { document.getElementById('progressBox').classList.add('show'); resetSteps(); }
+        function hideProgress() { document.getElementById('progressBox').classList.remove('show'); }
+        function resetSteps() { for (let i = 1; i <= 4; i++) { const s = document.getElementById(`step${i}`); s.classList.remove('active', 'done'); } }
+        function animateStep(n) {
+            for (let i = 1; i <= 4; i++) {
+                const s = document.getElementById(`step${i}`);
+                if (i < n) { s.classList.remove('active'); s.classList.add('done'); s.querySelector('.ico').textContent = '✅'; }
+                else if (i === n) { s.classList.add('active'); s.classList.remove('done'); }
+                else { s.classList.remove('active', 'done'); }
+            }
+        }
+
+        // === RENDER ===
+        function renderResults(data) {
+            hideProgress();
+            const box = document.getElementById('resultsBox');
+            box.classList.add('show');
+
+            document.getElementById('resultsTitle').textContent =
+                `📊 ${data.quantidade || data.resultados?.length || 0} preços reais para "${data.produto}"`;
+
+            if (data.resultados && data.resultados.length > 0) {
+                const precos = data.resultados.filter(r => r.preco > 0).map(r => r.preco);
+                const menor = Math.min(...precos);
+                const maior = Math.max(...precos);
+                const economia = maior - menor;
+                const lojas = new Set(data.resultados.map(r => r.loja)).size;
+
+                document.getElementById('summaryRow').innerHTML = `
+                    <div class="s-card best"><div class="val">R$ ${menor.toFixed(2)}</div><div class="lbl">⭐ Melhor Preço</div></div>
+                    <div class="s-card"><div class="val">R$ ${maior.toFixed(2)}</div><div class="lbl">Maior Preço</div></div>
+                    <div class="s-card"><div class="val" style="color:#38a169;">R$ ${economia.toFixed(2)}</div><div class="lbl">💰 Economia</div></div>
+                    <div class="s-card"><div class="val">${lojas}</div><div class="lbl">🏪 Lojas</div></div>
+                `;
+
+                const grid = document.getElementById('productGrid');
+                grid.innerHTML = data.resultados.map((item) => {
+                    const isBest = item.preco === menor && item.preco > 0;
+                    const hasImg = item.imagem && item.imagem.length > 5;
+                    const sourceClass = item.fonte === 'verificado' ? 'verified' :
+                        item.fonte === 'google_shopping' ? 'google' : 'scraping';
+                    const sourceLabel = item.fonte === 'verificado' ? '✅ API Verificado' :
+                        item.fonte === 'google_shopping' ? '🔍 Google Shopping' : '🔎 Web';
+                    return `
+                        <div class="product-card ${isBest ? 'best-price' : ''} ${hasImg ? '' : 'no-img'}">
+                            ${isBest ? '<span class="best-badge">⭐ Melhor Preço</span>' : ''}
+                            ${hasImg ? `<div class="p-img"><img src="${esc(item.imagem)}" alt="" loading="lazy" onerror="this.parentElement.innerHTML='<span class=no-img-icon>📦</span>'"></div>` : ''}
+                            <div class="p-info">
+                                <h3>${esc(item.produto || data.produto)}</h3>
+                                <div class="p-store">
+                                    🏪 <strong>${esc(item.loja)}</strong>
+                                    <span class="source-badge ${sourceClass}">${sourceLabel}</span>
+                                    ${item.condicao ? `<span style="font-size:11px;color:#a0aec0;">${esc(item.condicao)}</span>` : ''}
+                                </div>
+                                <div class="p-meta">
+                                    <span>📦 Frete: <b>${esc(item.frete || 'Consultar')}</b></span>
+                                    <span>✅ <b>${esc(item.disponibilidade || 'Verificar')}</b></span>
+                                    ${item.vendedor ? `<span>🏷️ <b>${esc(item.vendedor)}</b></span>` : ''}
+                                </div>
+                            </div>
+                            <div class="p-price">
+                                <div class="amount">R$ ${(item.preco || 0).toFixed(2)}</div>
+                                ${item.link ? `<a href="${esc(item.link)}" target="_blank" rel="noopener" class="buy-link">🛒 Comprar</a>` : ''}
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            } else {
+                document.getElementById('summaryRow').innerHTML = '';
+                document.getElementById('productGrid').innerHTML = `
+                    <div style="text-align:center;padding:40px;color:#a0aec0;">
+                        <p style="font-size:40px;">😕</p>
+                        <p>Nenhum resultado encontrado. Tente termos diferentes.</p>
+                    </div>`;
+            }
+
+            // Quick search links
+            if (data.quickLinks && data.quickLinks.length > 0) {
+                const qBox = document.getElementById('quickSearchBox');
+                qBox.style.display = 'block';
+                document.getElementById('quickLinks').innerHTML = data.quickLinks.map(ql =>
+                    `<a href="${esc(ql.url)}" target="_blank" rel="noopener" class="q-link">${ql.icone} ${esc(ql.loja)}</a>`
+                ).join('');
+            }
+
+            // AI analysis
+            if (data.resumo) {
+                document.getElementById('aiBox').classList.add('show');
+                document.getElementById('aiText').textContent = data.resumo;
+            }
+
+            box.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+
+        function hideResults() {
+            document.getElementById('resultsBox').classList.remove('show');
+            document.getElementById('aiBox').classList.remove('show');
+            document.getElementById('quickSearchBox').style.display = 'none';
+        }
+
+        // === AI ANALYSIS ===
+        async function analisarIA() {
+            if (!currentCotacaoId) { showToast('Faça uma busca primeiro', 'warning'); return; }
+            const btn = document.querySelector('.r-btn.ia');
+            btn.disabled = true; btn.innerHTML = '<span class="spin">⏳</span> Analisando...';
+            try {
+                const response = await fetch(`${API_URL}/api/cotacoes/${currentCotacaoId}/analise`, {
+                    headers: { 'Authorization': `Bearer ${getToken()}` }
+                });
+                if (!response.ok) { const e = await response.json(); throw new Error(e.error); }
+                const data = await response.json();
+                document.getElementById('aiBox').classList.add('show');
+                document.getElementById('aiText').textContent = data.analise;
+                document.getElementById('aiBox').scrollIntoView({ behavior: 'smooth' });
+            } catch (error) { showToast('Erro na análise: ' + error.message, 'error'); }
+            finally { btn.disabled = false; btn.innerHTML = '🤖 Análise IA'; }
+        }
+
+        // === EXPORT EXCEL ===
+        async function exportarExcel() {
+            if (!currentCotacaoId) { showToast('Faça uma busca primeiro', 'warning'); return; }
+            try {
+                const response = await fetch(`${API_URL}/api/cotacoes/${currentCotacaoId}/exportar`, {
+                    headers: { 'Authorization': `Bearer ${getToken()}` }
+                });
+                if (!response.ok) throw new Error('Erro ao exportar');
+                const blob = await response.blob();
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a'); a.href = url;
+                a.download = `cotacao_${currentCotacaoId}.xlsx`; a.click();
+                window.URL.revokeObjectURL(url);
+            } catch (error) { showToast('Erro ao exportar: ' + error.message, 'error'); }
+        }
+
+        // === NEW SEARCH ===
+        function novaBusca() {
+            hideResults();
+            document.getElementById('searchProduct').value = '';
+            document.getElementById('searchSpecs').value = '';
+            document.getElementById('searchQty').value = '1';
+            document.getElementById('searchProduct').focus();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        // === HISTORY ===
+        async function loadHistory() {
+            try {
+                const response = await fetch(`${API_URL}/api/cotacoes`, { headers: { 'Authorization': `Bearer ${getToken()}` } });
+                const cotacoes = await response.json();
+                const list = document.getElementById('historyList');
+                if (!cotacoes.length) { list.innerHTML = '<p style="color:#a0aec0;text-align:center;padding:24px;">Nenhuma cotação realizada ainda</p>'; return; }
+                list.innerHTML = cotacoes.map(c => {
+                    const date = c.created_at ? new Date(c.created_at).toLocaleDateString('pt-BR') : '-';
+                    const statusMap = { 'aberta': 'Aberta', 'finalizada': 'Finalizada', 'cancelada': 'Cancelada' };
+                    return `<div class="h-item" onclick="viewCotacao(${c.id})">
+                        <div class="h-info"><h4>${esc(c.titulo)}</h4><span>${date} · ${c.total_itens || 0} resultados</span></div>
+                        <div class="h-meta"><span class="h-badge ${c.status}">${statusMap[c.status] || c.status}</span>
+                        <button class="h-del" onclick="event.stopPropagation();deleteCotacao(${c.id})" title="Excluir">🗑️</button></div>
+                    </div>`;
+                }).join('');
+            } catch (error) { console.error('Erro histórico:', error); }
+        }
+
+        async function viewCotacao(id) {
+            try {
+                const response = await fetch(`${API_URL}/api/cotacoes/${id}`, { headers: { 'Authorization': `Bearer ${getToken()}` } });
+                const data = await response.json();
+                currentCotacaoId = id;
+                const resultados = (data.itens || []).map(item => ({
+                    loja: item.loja, produto: item.produto, preco: item.preco,
+                    link: item.link, frete: item.frete, disponibilidade: item.disponibilidade,
+                    melhor_preco: item.melhor_preco, fonte: item.link?.includes('mercadolivre') ? 'verificado' : 'scraping'
+                }));
+                renderResults({ produto: data.titulo?.replace('Cotação: ', '') || 'Produto', resultados, quantidade: resultados.length, resumo: '' });
+            } catch (error) { showToast('Erro ao carregar cotação', 'error'); }
+        }
+
+        async function deleteCotacao(id) {
+            if (!confirm('Excluir esta cotação?')) return;
+            try {
+                await fetch(`${API_URL}/api/cotacoes/${id}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${getToken()}` } });
+                loadHistory();
+                if (currentCotacaoId === id) { hideResults(); currentCotacaoId = null; }
+            } catch (error) { showToast('Erro ao excluir', 'error'); }
+        }
+
+        // Utils
+        function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+        function esc(t) { if (!t) return ''; const d = document.createElement('div'); d.textContent = t; return d.innerHTML; }
+
+        // Init
+        loadHistory();
+    </script>
+</body>
+
+</html>

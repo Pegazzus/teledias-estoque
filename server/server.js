@@ -1,3 +1,4 @@
+require('dotenv').config({ path: require('path').join(__dirname, '..', '.env') });
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
@@ -16,6 +17,9 @@ async function startServer() {
         const clientesRoutes = require('./routes/clientes');
         const movimentacoesRoutes = require('./routes/movimentacoes');
         const relatoriosRoutes = require('./routes/relatorios');
+        const fornecedoresRoutes = require('./routes/fornecedores');
+        const cotacoesRoutes = require('./routes/cotacoes');
+        const statusRoutes = require('./routes/status');
 
         const app = express();
         const PORT = process.env.PORT || 3000;
@@ -31,6 +35,9 @@ async function startServer() {
         app.use('/api/clientes', clientesRoutes);
         app.use('/api/movimentacoes', movimentacoesRoutes);
         app.use('/api/relatorios', relatoriosRoutes);
+        app.use('/api/fornecedores', fornecedoresRoutes);
+        app.use('/api/cotacoes', cotacoesRoutes);
+        app.use('/api/status', statusRoutes);
 
         // Rota raiz - redirecionar para login
         app.get('/', (req, res) => {

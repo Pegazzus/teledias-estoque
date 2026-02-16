@@ -123,6 +123,78 @@ async function initializeDatabase() {
         )
     `);
 
+    // Tabela de fornecedores
+    await db.execute(`
+        CREATE TABLE IF NOT EXISTS fornecedores (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            nome TEXT NOT NULL,
+            cnpj TEXT,
+            telefone TEXT,
+            email TEXT,
+            endereco TEXT,
+            contato TEXT,
+            site TEXT,
+            observacoes TEXT,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+    `);
+
+    // Tabela de cotações
+    await db.execute(`
+        CREATE TABLE IF NOT EXISTS cotacoes (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            titulo TEXT NOT NULL,
+            descricao TEXT,
+            status TEXT DEFAULT 'aberta' CHECK(status IN ('aberta', 'finalizada', 'cancelada')),
+            data_validade DATETIME,
+            observacoes TEXT,
+            usuario_id INTEGER,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (usuario_id) REFERENCES usuarios(id)
+        )
+    `);
+
+    // Tabela de itens da cotação (preços encontrados pela IA)
+    await db.execute(`
+        CREATE TABLE IF NOT EXISTS cotacao_itens (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            cotacao_id INTEGER NOT NULL,
+            loja TEXT NOT NULL,
+            produto TEXT NOT NULL,
+            preco REAL,
+            link TEXT,
+            frete TEXT,
+            disponibilidade TEXT,
+            observacoes TEXT,
+            melhor_preco INTEGER DEFAULT 0,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (cotacao_id) REFERENCES cotacoes(id) ON DELETE CASCADE
+        )
+    `);
+
+    // Tabela de configurações do sistema
+    await db.execute(`
+        CREATE TABLE IF NOT EXISTS system_settings (
+            key TEXT PRIMARY KEY,
+            value TEXT,
+            description TEXT,
+            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+    `);
+
+    // Seed default settings if not exists
+    try {
+        const proxySetting = await db.execute({ sql: "SELECT * FROM system_settings WHERE key = ?", args: ['proxy_url'] });
+        if (proxySetting.rows.length === 0) {
+            await db.execute({
+                sql: "INSERT INTO system_settings (key, value, description) VALUES (?, ?, ?)",
+                args: ['proxy_url', '', 'URL do Proxy rotativo (ex: http://user:pass@host:port)']
+            });
+        }
+    } catch (e) {
+        // Ignorar erro se tabela ainda não existir na primeira execução ou erro de sintaxe
+    }
+
     // Criar usuário admin padrão se não existir
     const adminResult = await db.execute({
         sql: 'SELECT id FROM usuarios WHERE email = ?',

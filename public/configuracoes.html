@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Configurações do Sistema - Teledias</title>
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        .config-container {
+            max-width: 800px;
+            margin: 2rem auto;
+            padding: 2rem;
+            background: white;
+            border-radius: var(--border-radius);
+            box-shadow: var(--box-shadow);
+        }
+
+        .config-group {
+            margin-bottom: 2rem;
+            padding-bottom: 2rem;
+            border-bottom: 1px solid #eee;
+        }
+
+        .config-group:last-child {
+            border-bottom: none;
+        }
+
+        .config-label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            color: var(--text-color);
+        }
+
+        .config-desc {
+            font-size: 0.9rem;
+            color: #666;
+            margin-bottom: 0.5rem;
+        }
+
+        .config-input {
+            width: 100%;
+            padding: 0.8rem;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-family: monospace;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+
+        .status-online {
+            background: #e6f4ea;
+            color: #1e8e3e;
+        }
+
+        .status-blocked {
+            background: #fce8e6;
+            color: #c5221f;
+        }
+
+        .btn-save {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 0.8rem 1.5rem;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+
+        .btn-save:hover {
+            background-color: var(--secondary-color);
+        }
+
+        .health-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .health-card {
+            background: #f8f9fa;
+            padding: 1rem;
+            border-radius: 8px;
+            text-align: center;
+        }
+    </style>
+</head>
+
+<body>
+    <nav class="navbar">
+        <div class="nav-brand">Teledias Estoque</div>
+        <div class="nav-links">
+            <a href="cotacoes.html">Cotações</a>
+            <a href="configuracoes.html" class="active">Configurações</a>
+            <a href="#" onclick="logout()">Sair</a>
+        </div>
+    </nav>
+
+    <div class="config-container">
+        <h1>⚙️ Configurações do Sistema</h1>
+
+        <div class="config-group">
+            <h2>Status dos Scrapers</h2>
+            <p class="config-desc">Verifique se as conexões com as lojas estão funcionando.</p>
+            <div id="healthCheck" class="health-grid">
+                <div class="health-card">Carregando status...</div>
+            </div>
+            <button onclick="checkHealth()" style="margin-top: 1rem; padding: 0.5rem 1rem; cursor: pointer;">🔄
+                Atualizar Status</button>
+        </div>
+
+        <div class="config-group">
+            <h2>Proxy Rotativo</h2>
+            <label class="config-label">URL do Proxy</label>
+            <p class="config-desc">Use um proxy para evitar bloqueios do Mercado Livre (Erro 403).<br>Formato:
+                <code>http://usuario:senha@host:porta</code></p>
+            <input type="text" id="proxyUrl" class="config-input" placeholder="http://...">
+            <div style="margin-top: 1rem; text-align: right;">
+                <button onclick="saveProxy()" class="btn-save">Salvar Configuração</button>
+            </div>
+        </div>
+
+        <div class="config-group">
+            <h2>Outras Configurações</h2>
+            <p>Mais opções em breve...</p>
+        </div>
+    </div>
+
+    <script>
+        // Carregar configurações ao iniciar
+        async function loadSettings() {
+            try {
+                const res = await fetch('/api/settings');
+                const settings = await res.json();
+
+                const proxySetting = settings.find(s => s.key === 'proxy_url');
+                if (proxySetting) {
+                    document.getElementById('proxyUrl').value = proxySetting.value || '';
+                }
+            } catch (error) {
+                console.error('Erro ao carregar configurações:', error);
+            }
+        }
+
+        // Verificar saúde dos scrapers
+        async function checkHealth() {
+            const container = document.getElementById('healthCheck');
+            container.innerHTML = '<div class="health-card">⏳ Verificando conexões... (pode levar 10s)</div>';
+
+            try {
+                const res = await fetch('/api/status');
+                const data = await res.json();
+
+                if (data.scrapers) {
+                    container.innerHTML = data.scrapers.map(s => `
+                        <div class="health-card">
+                            <strong>${s.name}</strong><br>
+                            <span class="status-badge ${s.status === 'online' ? 'status-online' : 'status-blocked'}">
+                                ${s.status === 'online' ? '✅ Online' : '⚠️ Bloqueado'}
+                            </span>
+                            <br><small>${s.count} resultados teste</small>
+                        </div>
+                    `).join('');
+                }
+            } catch (error) {
+                container.innerHTML = '<div class="health-card status-blocked">Erro ao verificar status</div>';
+            }
+        }
+
+        // Salvar proxy
+        async function saveProxy() {
+            const value = document.getElementById('proxyUrl').value;
+            try {
+                const res = await fetch('/api/settings', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ key: 'proxy_url', value })
+                });
+
+                if (res.ok) {
+                    alert('Configuração salva com sucesso! O sistema já está usando o novo proxy.');
+                } else {
+                    alert('Erro ao salvar.');
+                }
+            } catch (error) {
+                alert('Erro de conexão.');
+            }
+        }
+
+        // Inicialização
+        loadSettings();
+        checkHealth();
+
+        function logout() {
+            localStorage.removeItem('token');
+            window.location.href = 'index.html';
+        }
+    </script>
+</body>
+
+</html>
