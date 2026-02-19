@@ -146,7 +146,7 @@ router.get('/clientes', async (req, res) => {
     try {
         const result = await db.execute(`
             SELECT c.*, 
-                   (SELECT COUNT(*) FROM radios r WHERE r.cliente_id = c.id AND r.status = 'cliente') as qtd_radios
+                   CAST((SELECT COUNT(*) FROM radios r WHERE r.cliente_id = c.id AND r.status = 'cliente') AS INT) as qtd_radios
             FROM clientes c
             ORDER BY c.nome
         `);

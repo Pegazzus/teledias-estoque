@@ -1,0 +1,22 @@
+/* Icon styles */
+.nav-link-icon-img {
+    width: 16px;
+    height: 16px;
+    margin-right: 8px;
+    vertical-align: middle;
+    object-fit: contain;
+}
+
+.stat-icon-img {
+    width: 48px;
+    height: 48px;
+    margin-bottom: 12px;
+    opacity: 0.85;
+}
+
+.empty-state-icon-img {
+    width: 48px;
+    height: 48px;
+    margin-bottom: 16px;
+    opacity: 0.5;
+}

@@ -9,10 +9,11 @@ router.use(authMiddleware);
 // Listar movimentações
 router.get('/', async (req, res) => {
     try {
-        const { tipo, limite } = req.query;
+        const { tipo, limite, radio, modelo, cliente, usuario, serie } = req.query;
 
         let sql = `
-            SELECT m.*, r.codigo as radio_codigo, r.modelo as radio_modelo, 
+            SELECT m.*, r.codigo as radio_codigo, r.modelo as radio_modelo,
+                   r.numero_serie as radio_numero_serie,
                    c.nome as cliente_nome, u.nome as usuario_nome
             FROM movimentacoes m
             LEFT JOIN radios r ON m.radio_id = r.id
@@ -26,8 +27,28 @@ router.get('/', async (req, res) => {
             sql += ' AND m.tipo = ?';
             args.push(tipo);
         }
+        if (radio) {
+            sql += ' AND r.codigo LIKE ?';
+            args.push(`%${radio}%`);
+        }
+        if (serie) {
+            sql += ' AND r.numero_serie LIKE ?';
+            args.push(`%${serie}%`);
+        }
+        if (modelo) {
+            sql += ' AND r.modelo LIKE ?';
+            args.push(`%${modelo}%`);
+        }
+        if (cliente) {
+            sql += ' AND c.nome LIKE ?';
+            args.push(`%${cliente}%`);
+        }
+        if (usuario) {
+            sql += ' AND u.nome LIKE ?';
+            args.push(`%${usuario}%`);
+        }
 
-        sql += ' ORDER BY m.created_at DESC';
+        sql += ' ORDER BY r.numero_serie, m.created_at DESC';
 
         if (limite) {
             sql += ` LIMIT ${parseInt(limite)}`;
@@ -37,6 +58,47 @@ router.get('/', async (req, res) => {
         res.json(result.rows);
     } catch (error) {
         console.error('Erro ao listar movimentações:', error);
+        res.status(500).json({ error: 'Erro interno do servidor' });
+    }
+});
+
+// Histórico completo de um rádio
+router.get('/radio/:radioId', async (req, res) => {
+    try {
+        const { radioId } = req.params;
+
+        // Get radio details
+        const radioResult = await db.execute({
+            sql: `SELECT r.*, c.nome as cliente_nome 
+                  FROM radios r 
+                  LEFT JOIN clientes c ON r.cliente_id = c.id 
+                  WHERE r.id = ?`,
+            args: [radioId]
+        });
+
+        if (radioResult.rows.length === 0) {
+            return res.status(404).json({ error: 'Rádio não encontrado' });
+        }
+
+        const radio = radioResult.rows[0];
+
+        // Get all movements for this radio
+        const movResult = await db.execute({
+            sql: `SELECT m.*, c.nome as cliente_nome, u.nome as usuario_nome
+                  FROM movimentacoes m
+                  LEFT JOIN clientes c ON m.cliente_id = c.id
+                  LEFT JOIN usuarios u ON m.usuario_id = u.id
+                  WHERE m.radio_id = ?
+                  ORDER BY m.created_at ASC`,
+            args: [radioId]
+        });
+
+        res.json({
+            radio: radio,
+            movimentacoes: movResult.rows
+        });
+    } catch (error) {
+        console.error('Erro ao buscar histórico do rádio:', error);
         res.status(500).json({ error: 'Erro interno do servidor' });
     }
 });

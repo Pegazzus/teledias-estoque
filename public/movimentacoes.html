@@ -30,7 +30,8 @@
                         Dashboard
                     </a>
                     <a href="radios.html" class="nav-link">
-                        <span class="nav-link-icon">📻</span>
+                        <img src="img/walkie-talkie.png" alt="Rádio"
+                            style="width:20px;height:20px;margin-right:8px;vertical-align:middle">
                         Rádios
                     </a>
                     <a href="clientes.html" class="nav-link">
@@ -96,18 +97,62 @@
                 <div class="card">
                     <div class="card-header">
                         <h3 class="card-title">Movimentações</h3>
-                        <div class="card-actions">
-                            <div class="filter-bar">
-                                <select id="filterTipo" class="form-control" onchange="loadMovimentacoes()">
-                                    <option value="">Todos os tipos</option>
-                                    <option value="saida">Saídas</option>
-                                    <option value="retorno">Retornos</option>
-                                    <option value="manutencao">Manutenções</option>
-                                    <option value="retorno_manutencao">Ret. Manutenção</option>
-                                </select>
-                            </div>
-                        </div>
                     </div>
+
+                    <!-- Filter Bar -->
+                    <div
+                        style="padding: 16px 20px; background: var(--gray-50); border-bottom: 1px solid var(--gray-200); display: flex; gap: 12px; flex-wrap: wrap; align-items: flex-end;">
+                        <div style="display:flex; flex-direction:column; gap:4px;">
+                            <label
+                                style="font-size:11px; font-weight:600; color:var(--gray-500); text-transform:uppercase; letter-spacing:0.5px;">Tipo</label>
+                            <select id="filterTipo" class="form-control" onchange="loadMovimentacoes()"
+                                style="width: 150px; font-size: 13px;">
+                                <option value="">Todos os tipos</option>
+                                <option value="saida">Saídas</option>
+                                <option value="retorno">Retornos</option>
+                                <option value="manutencao">Manutenções</option>
+                                <option value="retorno_manutencao">Ret. Manutenção</option>
+                            </select>
+                        </div>
+                        <div style="display:flex; flex-direction:column; gap:4px;">
+                            <label
+                                style="font-size:11px; font-weight:600; color:var(--gray-500); text-transform:uppercase; letter-spacing:0.5px;">🔍
+                                Rádio</label>
+                            <input type="text" id="filterRadio" class="form-control" placeholder="Buscar..."
+                                oninput="debounceLoad()" style="width: 130px; font-size: 13px;">
+                        </div>
+                        <div style="display:flex; flex-direction:column; gap:4px;">
+                            <label
+                                style="font-size:11px; font-weight:600; color:var(--gray-500); text-transform:uppercase; letter-spacing:0.5px;">🔍
+                                Nº Série</label>
+                            <input type="text" id="filterSerie" class="form-control" placeholder="Buscar..."
+                                oninput="debounceLoad()" style="width: 130px; font-size: 13px;">
+                        </div>
+                        <div style="display:flex; flex-direction:column; gap:4px;">
+                            <label
+                                style="font-size:11px; font-weight:600; color:var(--gray-500); text-transform:uppercase; letter-spacing:0.5px;">🔍
+                                Modelo</label>
+                            <input type="text" id="filterModelo" class="form-control" placeholder="Buscar..."
+                                oninput="debounceLoad()" style="width: 130px; font-size: 13px;">
+                        </div>
+                        <div style="display:flex; flex-direction:column; gap:4px;">
+                            <label
+                                style="font-size:11px; font-weight:600; color:var(--gray-500); text-transform:uppercase; letter-spacing:0.5px;">🔍
+                                Cliente</label>
+                            <input type="text" id="filterCliente" class="form-control" placeholder="Buscar..."
+                                oninput="debounceLoad()" style="width: 130px; font-size: 13px;">
+                        </div>
+                        <div style="display:flex; flex-direction:column; gap:4px;">
+                            <label
+                                style="font-size:11px; font-weight:600; color:var(--gray-500); text-transform:uppercase; letter-spacing:0.5px;">🔍
+                                Usuário</label>
+                            <input type="text" id="filterUsuario" class="form-control" placeholder="Buscar..."
+                                oninput="debounceLoad()" style="width: 130px; font-size: 13px;">
+                        </div>
+                        <button onclick="clearFilters()" class="btn btn-secondary"
+                            style="font-size: 13px; padding: 6px 14px; height:34px;">Limpar</button>
+                    </div>
+
                     <div class="card-body">
                         <div class="table-container">
                             <table>
@@ -116,6 +161,7 @@
                                         <th>Data</th>
                                         <th>Tipo</th>
                                         <th>Rádio</th>
+                                        <th>Nº Série</th>
                                         <th>Modelo</th>
                                         <th>Cliente</th>
                                         <th>Usuário</th>
@@ -124,7 +170,7 @@
                                 </thead>
                                 <tbody id="movimentacoesTableBody">
                                     <tr>
-                                        <td colspan="7">
+                                        <td colspan="8">
                                             <div class="empty-state">
                                                 <p>Carregando...</p>
                                             </div>
@@ -139,6 +185,39 @@
         </main>
     </div>
 
+    <!-- History Modal Overlay -->
+    <div id="historyOverlay"
+        style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.5); z-index:1000; opacity:0; transition:opacity 0.3s;"
+        onclick="closeHistory()"></div>
+
+    <!-- History Slide Panel -->
+    <div id="historyPanel"
+        style="display:none; position:fixed; top:0; right:-520px; width:520px; max-width:90vw; height:100vh; background:white; z-index:1001; box-shadow:-4px 0 24px rgba(0,0,0,0.15); transition:right 0.3s ease; overflow-y:auto;">
+        <div style="padding: 24px;">
+            <!-- Panel Header -->
+            <div
+                style="display:flex; align-items:center; justify-content:space-between; margin-bottom:24px; padding-bottom:16px; border-bottom:1px solid var(--gray-200);">
+                <div>
+                    <h2 style="margin:0; font-size:18px; color:var(--gray-800);" id="historyTitle">Histórico do Rádio
+                    </h2>
+                    <p style="margin:4px 0 0; font-size:13px; color:var(--gray-500);" id="historySubtitle"></p>
+                </div>
+                <button onclick="closeHistory()"
+                    style="background:none; border:none; font-size:24px; cursor:pointer; color:var(--gray-400); padding:4px 8px; border-radius:6px;"
+                    onmouseover="this.style.background='var(--gray-100)'"
+                    onmouseout="this.style.background='none'">✕</button>
+            </div>
+
+            <!-- Radio Info Card -->
+            <div id="radioInfoCard"
+                style="background:var(--gray-50); border-radius:10px; padding:16px; margin-bottom:24px; border:1px solid var(--gray-200);">
+            </div>
+
+            <!-- Timeline -->
+            <div id="historyTimeline"></div>
+        </div>
+    </div>
+
     <script src="js/auth.js"></script>
     <script>
         if (!requireAuth()) throw new Error('Não autenticado');
@@ -146,18 +225,53 @@
         setActiveNav();
 
         const tipoMap = {
-            'saida': { label: 'Saída', class: 'badge-cliente' },
-            'retorno': { label: 'Retorno', class: 'badge-estoque' },
-            'manutencao': { label: 'Manutenção', class: 'badge-manutencao' },
-            'retorno_manutencao': { label: 'Ret. Manutenção', class: 'badge-estoque' }
+            'saida': { label: 'Saída', class: 'badge-cliente', icon: '📤', color: '#e74c3c' },
+            'retorno': { label: 'Retorno', class: 'badge-estoque', icon: '📥', color: '#27ae60' },
+            'manutencao': { label: 'Manutenção', class: 'badge-manutencao', icon: '🔧', color: '#f39c12' },
+            'retorno_manutencao': { label: 'Ret. Manutenção', class: 'badge-estoque', icon: '✅', color: '#27ae60' }
         };
+
+        const statusMap = {
+            'estoque': { label: 'Em Estoque', class: 'badge-estoque' },
+            'cliente': { label: 'Com Cliente', class: 'badge-cliente' },
+            'manutencao': { label: 'Em Manutenção', class: 'badge-manutencao' }
+        };
+
+        let debounceTimer = null;
+        function debounceLoad() {
+            clearTimeout(debounceTimer);
+            debounceTimer = setTimeout(loadMovimentacoes, 400);
+        }
+
+        function clearFilters() {
+            document.getElementById('filterTipo').value = '';
+            document.getElementById('filterRadio').value = '';
+            document.getElementById('filterSerie').value = '';
+            document.getElementById('filterModelo').value = '';
+            document.getElementById('filterCliente').value = '';
+            document.getElementById('filterUsuario').value = '';
+            loadMovimentacoes();
+        }
 
         async function loadMovimentacoes() {
             try {
+                const params = new URLSearchParams();
                 const tipo = document.getElementById('filterTipo').value;
-                let url = '/api/movimentacoes';
-                if (tipo) url += `?tipo=${tipo}`;
+                const radio = document.getElementById('filterRadio').value.trim();
+                const serie = document.getElementById('filterSerie').value.trim();
+                const modelo = document.getElementById('filterModelo').value.trim();
+                const cliente = document.getElementById('filterCliente').value.trim();
+                const usuario = document.getElementById('filterUsuario').value.trim();
 
+                if (tipo) params.set('tipo', tipo);
+                if (radio) params.set('radio', radio);
+                if (serie) params.set('serie', serie);
+                if (modelo) params.set('modelo', modelo);
+                if (cliente) params.set('cliente', cliente);
+                if (usuario) params.set('usuario', usuario);
+
+                const qs = params.toString();
+                const url = '/api/movimentacoes' + (qs ? '?' + qs : '');
                 const response = await fetchApi(url);
                 const movimentacoes = await response.json();
 
@@ -166,7 +280,7 @@
                 if (movimentacoes.length === 0) {
                     tbody.innerHTML = `
                         <tr>
-                            <td colspan="7">
+                            <td colspan="8">
                                 <div class="empty-state">
                                     <div class="empty-state-icon">🔄</div>
                                     <h3>Nenhuma movimentação encontrada</h3>
@@ -181,10 +295,11 @@
                 tbody.innerHTML = movimentacoes.map(mov => {
                     const tipoInfo = tipoMap[mov.tipo] || { label: mov.tipo, class: '' };
                     return `
-                        <tr>
+                        <tr onclick="openHistory(${mov.radio_id})" style="cursor:pointer;" onmouseover="this.style.background='var(--primary-50)'" onmouseout="this.style.background=''">
                             <td>${formatDate(mov.created_at)}</td>
                             <td><span class="badge ${tipoInfo.class}">${tipoInfo.label}</span></td>
                             <td><strong>${mov.radio_codigo}</strong></td>
+                            <td style="color: var(--gray-500); font-size: 13px;">${mov.radio_numero_serie || '-'}</td>
                             <td>${mov.radio_modelo}</td>
                             <td>${mov.cliente_nome || '-'}</td>
                             <td>${mov.usuario_nome || '-'}</td>
@@ -196,6 +311,136 @@
                 showToast('Erro ao carregar movimentações', 'error');
             }
         }
+
+        async function openHistory(radioId) {
+            const overlay = document.getElementById('historyOverlay');
+            const panel = document.getElementById('historyPanel');
+
+            // Show and animate in
+            overlay.style.display = 'block';
+            panel.style.display = 'block';
+            setTimeout(() => {
+                overlay.style.opacity = '1';
+                panel.style.right = '0';
+            }, 10);
+
+            // Loading state
+            document.getElementById('historyTitle').textContent = 'Carregando...';
+            document.getElementById('historySubtitle').textContent = '';
+            document.getElementById('radioInfoCard').innerHTML = '<p style="text-align:center;color:var(--gray-400);">⏳ Carregando dados...</p>';
+            document.getElementById('historyTimeline').innerHTML = '';
+
+            try {
+                const response = await fetchApi(`/api/movimentacoes/radio/${radioId}`);
+                const data = await response.json();
+                const radio = data.radio;
+                const movs = data.movimentacoes;
+
+                // Header
+                document.getElementById('historyTitle').textContent = `Rádio ${radio.codigo}`;
+                document.getElementById('historySubtitle').textContent = `${radio.modelo || ''} ${radio.marca ? '• ' + radio.marca : ''}`;
+
+                // Radio info card
+                const st = statusMap[radio.status] || { label: radio.status, class: '' };
+                document.getElementById('radioInfoCard').innerHTML = `
+                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+                        <div>
+                            <div style="font-size:11px; color:var(--gray-400); text-transform:uppercase; letter-spacing:0.5px;">Código</div>
+                            <div style="font-weight:600; color:var(--gray-800);">${radio.codigo}</div>
+                        </div>
+                        <div>
+                            <div style="font-size:11px; color:var(--gray-400); text-transform:uppercase; letter-spacing:0.5px;">Nº Série</div>
+                            <div style="font-weight:600; color:var(--gray-800);">${radio.numero_serie || '-'}</div>
+                        </div>
+                        <div>
+                            <div style="font-size:11px; color:var(--gray-400); text-transform:uppercase; letter-spacing:0.5px;">Modelo</div>
+                            <div style="font-weight:600; color:var(--gray-800);">${radio.modelo || '-'}</div>
+                        </div>
+                        <div>
+                            <div style="font-size:11px; color:var(--gray-400); text-transform:uppercase; letter-spacing:0.5px;">Status Atual</div>
+                            <div><span class="badge ${st.class}">${st.label}</span></div>
+                        </div>
+                        ${radio.cliente_nome ? `
+                        <div style="grid-column: span 2;">
+                            <div style="font-size:11px; color:var(--gray-400); text-transform:uppercase; letter-spacing:0.5px;">Cliente Atual</div>
+                            <div style="font-weight:600; color:var(--gray-800);">${radio.cliente_nome}</div>
+                        </div>` : ''}
+                    </div>
+                `;
+
+                // Build timeline
+                let timeline = '';
+
+                // First item: cadastro
+                timeline += `
+                    <div style="display:flex; gap:16px; position:relative;">
+                        <div style="display:flex; flex-direction:column; align-items:center; flex-shrink:0;">
+                            <div style="width:32px; height:32px; border-radius:50%; background:var(--primary-100); display:flex; align-items:center; justify-content:center; font-size:16px; border:2px solid var(--primary-400);">📦</div>
+                            ${movs.length > 0 ? '<div style="width:2px; flex:1; background:var(--gray-200); margin:4px 0;"></div>' : ''}
+                        </div>
+                        <div style="padding-bottom:24px; flex:1;">
+                            <div style="font-weight:600; color:var(--gray-800); font-size:14px;">Cadastro do Rádio</div>
+                            <div style="font-size:12px; color:var(--gray-400); margin-top:2px;">${formatDate(radio.created_at)}</div>
+                            <div style="margin-top:6px; padding:8px 12px; background:var(--gray-50); border-radius:8px; font-size:13px; color:var(--gray-600);">
+                                Rádio cadastrado no sistema
+                            </div>
+                        </div>
+                    </div>
+                `;
+
+                // Movement items
+                movs.forEach((mov, i) => {
+                    const info = tipoMap[mov.tipo] || { label: mov.tipo, icon: '•', color: '#888' };
+                    const isLast = i === movs.length - 1;
+
+                    timeline += `
+                        <div style="display:flex; gap:16px; position:relative;">
+                            <div style="display:flex; flex-direction:column; align-items:center; flex-shrink:0;">
+                                <div style="width:32px; height:32px; border-radius:50%; background:${info.color}15; display:flex; align-items:center; justify-content:center; font-size:16px; border:2px solid ${info.color};">${info.icon}</div>
+                                ${!isLast ? '<div style="width:2px; flex:1; background:var(--gray-200); margin:4px 0;"></div>' : ''}
+                            </div>
+                            <div style="padding-bottom:${isLast ? '8' : '24'}px; flex:1;">
+                                <div style="font-weight:600; color:var(--gray-800); font-size:14px;">${info.label}</div>
+                                <div style="font-size:12px; color:var(--gray-400); margin-top:2px;">${formatDate(mov.created_at)}</div>
+                                <div style="margin-top:6px; padding:8px 12px; background:var(--gray-50); border-radius:8px; font-size:13px; color:var(--gray-600);">
+                                    ${mov.cliente_nome ? `<strong>Cliente:</strong> ${mov.cliente_nome}<br>` : ''}
+                                    ${mov.usuario_nome ? `<strong>Usuário:</strong> ${mov.usuario_nome}<br>` : ''}
+                                    ${mov.observacoes ? `<strong>Obs:</strong> ${mov.observacoes}` : 'Sem observações'}
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+
+                if (movs.length === 0) {
+                    timeline += `
+                        <div style="text-align:center; padding:24px; color:var(--gray-400);">
+                            <p>📋 Nenhuma movimentação registrada para este rádio.</p>
+                        </div>
+                    `;
+                }
+
+                document.getElementById('historyTimeline').innerHTML = timeline;
+            } catch (error) {
+                document.getElementById('radioInfoCard').innerHTML = '<p style="text-align:center;color:#e74c3c;">❌ Erro ao carregar histórico</p>';
+            }
+        }
+
+        function closeHistory() {
+            const overlay = document.getElementById('historyOverlay');
+            const panel = document.getElementById('historyPanel');
+            overlay.style.opacity = '0';
+            panel.style.right = '-520px';
+            setTimeout(() => {
+                overlay.style.display = 'none';
+                panel.style.display = 'none';
+            }, 300);
+        }
+
+        // Close on Escape key
+        document.addEventListener('keydown', e => {
+            if (e.key === 'Escape') closeHistory();
+        });
 
         // Inicializar
         loadMovimentacoes();
