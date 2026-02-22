@@ -19,7 +19,11 @@ async function startServer() {
         const relatoriosRoutes = require('./routes/relatorios');
         const fornecedoresRoutes = require('./routes/fornecedores');
         const cotacoesRoutes = require('./routes/cotacoes');
+        const pedidosRoutes = require('./routes/pedidos');
+        const precosRoutes = require('./routes/precos');
         const statusRoutes = require('./routes/status');
+        const labRoutes = require('./routes/lab');
+        const financeiroRoutes = require('./routes/financeiro');
 
         const app = express();
         const PORT = process.env.PORT || 3000;
@@ -37,7 +41,11 @@ async function startServer() {
         app.use('/api/relatorios', relatoriosRoutes);
         app.use('/api/fornecedores', fornecedoresRoutes);
         app.use('/api/cotacoes', cotacoesRoutes);
+        app.use('/api/pedidos', pedidosRoutes);
+        app.use('/api/precos', precosRoutes);
         app.use('/api/status', statusRoutes);
+        app.use('/api/lab', labRoutes);
+        app.use('/api/financeiro', financeiroRoutes);
 
         // Rota raiz - redirecionar para login
         app.get('/', (req, res) => {

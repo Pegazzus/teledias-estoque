@@ -32,9 +32,10 @@ router.get('/', async (req, res) => {
         const { status, busca } = req.query;
 
         let sql = `
-            SELECT r.*, c.nome as cliente_nome 
+            SELECT r.*, c.nome as cliente_nome, f.nome as fornecedor_nome 
             FROM radios r 
             LEFT JOIN clientes c ON r.cliente_id = c.id 
+            LEFT JOIN fornecedores f ON r.fornecedor_id = f.id 
             WHERE 1=1
         `;
         const args = [];
@@ -64,9 +65,10 @@ router.get('/', async (req, res) => {
 router.get('/:id', async (req, res) => {
     try {
         const result = await db.execute({
-            sql: `SELECT r.*, c.nome as cliente_nome 
+            sql: `SELECT r.*, c.nome as cliente_nome, f.nome as fornecedor_nome 
                   FROM radios r 
                   LEFT JOIN clientes c ON r.cliente_id = c.id 
+                  LEFT JOIN fornecedores f ON r.fornecedor_id = f.id 
                   WHERE r.id = ?`,
             args: [req.params.id]
         });
@@ -107,7 +109,7 @@ router.get('/codigo/:codigo', async (req, res) => {
 // Criar novo rádio
 router.post('/', async (req, res) => {
     try {
-        const { codigo, modelo, marca, numero_serie, observacoes } = req.body;
+        const { codigo, modelo, marca, numero_serie, observacoes, proprietario_tipo, fornecedor_id, nota_remessa } = req.body;
 
         if (!codigo || !modelo) {
             return res.status(400).json({ error: 'Código e modelo são obrigatórios' });
@@ -124,8 +126,8 @@ router.post('/', async (req, res) => {
         }
 
         const result = await db.execute({
-            sql: 'INSERT INTO radios (codigo, modelo, marca, numero_serie, observacoes) VALUES (?, ?, ?, ?, ?)',
-            args: [codigo, modelo, marca || null, numero_serie || null, observacoes || null]
+            sql: 'INSERT INTO radios (codigo, modelo, marca, numero_serie, observacoes, proprietario_tipo, fornecedor_id, nota_remessa) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+            args: [codigo, modelo, marca || null, numero_serie || null, observacoes || null, proprietario_tipo || 'Próprio', fornecedor_id || null, nota_remessa || null]
         });
 
         res.status(201).json({
@@ -135,6 +137,9 @@ router.post('/', async (req, res) => {
             marca,
             numero_serie,
             observacoes,
+            proprietario_tipo: proprietario_tipo || 'Próprio',
+            fornecedor_id: fornecedor_id || null,
+            nota_remessa: nota_remessa || null,
             status: 'estoque'
         });
     } catch (error) {
@@ -146,7 +151,7 @@ router.post('/', async (req, res) => {
 // Atualizar rádio
 router.put('/:id', async (req, res) => {
     try {
-        const { codigo, modelo, marca, numero_serie, observacoes } = req.body;
+        const { codigo, modelo, marca, numero_serie, observacoes, proprietario_tipo, fornecedor_id, nota_remessa } = req.body;
         const { id } = req.params;
 
         const existsResult = await db.execute({
@@ -170,16 +175,27 @@ router.put('/:id', async (req, res) => {
             }
         }
 
-        await db.execute({
-            sql: `UPDATE radios 
-                  SET codigo = COALESCE(?, codigo),
-                      modelo = COALESCE(?, modelo),
-                      marca = COALESCE(?, marca),
-                      numero_serie = COALESCE(?, numero_serie),
-                      observacoes = COALESCE(?, observacoes)
-                  WHERE id = ?`,
-            args: [codigo, modelo, marca, numero_serie, observacoes, id]
-        });
+        // Se o valor for enviado na req, usa ele, senão mantem o q ta no banco.
+        // Para nota_remessa e fornecedor_id q podem ser null explicitamente, se a prop existir usamos.
+        const setFields = [];
+        const args = [];
+
+        if (codigo !== undefined) { setFields.push('codigo = ?'); args.push(codigo); }
+        if (modelo !== undefined) { setFields.push('modelo = ?'); args.push(modelo); }
+        if (marca !== undefined) { setFields.push('marca = ?'); args.push(marca); }
+        if (numero_serie !== undefined) { setFields.push('numero_serie = ?'); args.push(numero_serie); }
+        if (observacoes !== undefined) { setFields.push('observacoes = ?'); args.push(observacoes); }
+        if (proprietario_tipo !== undefined) { setFields.push('proprietario_tipo = ?'); args.push(proprietario_tipo); }
+        if (fornecedor_id !== undefined) { setFields.push('fornecedor_id = ?'); args.push(fornecedor_id); }
+        if (nota_remessa !== undefined) { setFields.push('nota_remessa = ?'); args.push(nota_remessa); }
+
+        if (setFields.length > 0) {
+            args.push(id);
+            await db.execute({
+                sql: `UPDATE radios SET ${setFields.join(', ')} WHERE id = ?`,
+                args: args
+            });
+        }
 
         const updatedResult = await db.execute({
             sql: 'SELECT * FROM radios WHERE id = ?',

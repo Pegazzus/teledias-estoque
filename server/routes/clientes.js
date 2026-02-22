@@ -60,15 +60,15 @@ router.get('/:id', async (req, res) => {
 // Criar novo cliente (admin only)
 router.post('/', requireAdmin, async (req, res) => {
     try {
-        const { nome, cnpj_cpf, telefone, email, endereco } = req.body;
+        const { nome, cnpj_cpf, telefone, email, endereco, plano_safe_ativo } = req.body;
 
         if (!nome) {
             return res.status(400).json({ error: 'Nome é obrigatório' });
         }
 
         const result = await db.execute({
-            sql: 'INSERT INTO clientes (nome, cnpj_cpf, telefone, email, endereco) VALUES (?, ?, ?, ?, ?)',
-            args: [nome, cnpj_cpf || null, telefone || null, email || null, endereco || null]
+            sql: 'INSERT INTO clientes (nome, cnpj_cpf, telefone, email, endereco, plano_safe_ativo) VALUES (?, ?, ?, ?, ?, ?)',
+            args: [nome, cnpj_cpf || null, telefone || null, email || null, endereco || null, plano_safe_ativo || 'Não']
         });
 
         res.status(201).json({
@@ -77,7 +77,8 @@ router.post('/', requireAdmin, async (req, res) => {
             cnpj_cpf,
             telefone,
             email,
-            endereco
+            endereco,
+            plano_safe_ativo: plano_safe_ativo || 'Não'
         });
     } catch (error) {
         console.error('Erro ao criar cliente:', error);
@@ -88,7 +89,7 @@ router.post('/', requireAdmin, async (req, res) => {
 // Atualizar cliente (admin only)
 router.put('/:id', requireAdmin, async (req, res) => {
     try {
-        const { nome, cnpj_cpf, telefone, email, endereco } = req.body;
+        const { nome, cnpj_cpf, telefone, email, endereco, plano_safe_ativo } = req.body;
         const { id } = req.params;
 
         const existsResult = await db.execute({
@@ -106,9 +107,10 @@ router.put('/:id', requireAdmin, async (req, res) => {
                       cnpj_cpf = COALESCE(?, cnpj_cpf),
                       telefone = COALESCE(?, telefone),
                       email = COALESCE(?, email),
-                      endereco = COALESCE(?, endereco)
+                      endereco = COALESCE(?, endereco),
+                      plano_safe_ativo = COALESCE(?, plano_safe_ativo)
                   WHERE id = ?`,
-            args: [nome, cnpj_cpf, telefone, email, endereco, id]
+            args: [nome, cnpj_cpf, telefone, email, endereco, plano_safe_ativo, id]
         });
 
         const updatedResult = await db.execute({

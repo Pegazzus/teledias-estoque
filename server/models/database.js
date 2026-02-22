@@ -182,6 +182,170 @@ async function initializeDatabase() {
         )
     `);
 
+    // ====== NOVAS TABELAS PARA FLUXO DE PEDIDOS/PROPOSTAS ======
+
+    // Tabela de Pedidos
+    await db.execute(`
+        CREATE TABLE IF NOT EXISTS pedidos (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            cliente_id INTEGER NOT NULL,
+            usuario_id INTEGER NOT NULL,
+            status_atual TEXT DEFAULT 'comercial', -- comercial, logistica, laboratorio, consultor_externo, financeiro, controle_qualidade, concluido
+            data_entrada_status DATETIME DEFAULT CURRENT_TIMESTAMP,
+            observacoes TEXT,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (cliente_id) REFERENCES clientes(id),
+            FOREIGN KEY (usuario_id) REFERENCES usuarios(id)
+        )
+    `);
+
+    // Tabela de Equipamentos Vinculados ao Pedido
+    await db.execute(`
+        CREATE TABLE IF NOT EXISTS pedido_equipamentos (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            pedido_id INTEGER NOT NULL,
+            serial_number TEXT,
+            modelo TEXT,
+            acessorios TEXT,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (pedido_id) REFERENCES pedidos(id) ON DELETE CASCADE
+        )
+    `);
+
+    // Tabela de Checklists do Pedido por Fase
+    await db.execute(`
+        CREATE TABLE IF NOT EXISTS pedido_checklists (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            pedido_id INTEGER NOT NULL,
+            fase_setor TEXT NOT NULL,
+            descricao TEXT NOT NULL,
+            concluido INTEGER DEFAULT 0,
+            FOREIGN KEY (pedido_id) REFERENCES pedidos(id) ON DELETE CASCADE
+        )
+    `);
+
+    // Tabela de Audit Logs para transições de status
+    await db.execute(`
+        CREATE TABLE IF NOT EXISTS audit_logs (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            pedido_id INTEGER NOT NULL,
+            acao TEXT NOT NULL,
+            status_anterior TEXT,
+            status_novo TEXT,
+            usuario_id INTEGER NOT NULL,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (pedido_id) REFERENCES pedidos(id) ON DELETE CASCADE,
+            FOREIGN KEY (usuario_id) REFERENCES usuarios(id)
+        )
+    `);
+
+    // Tabela de Preços Indenizatórios
+    await db.execute(`
+        CREATE TABLE IF NOT EXISTS precos_indenizatorios (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            modelo_equipamento TEXT NOT NULL,
+            componente TEXT NOT NULL,
+            valor_base REAL DEFAULT 0,
+            valor_mao_de_obra REAL DEFAULT 0,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+    `);
+
+    // Tabela de Peças do Pedido
+    await db.execute(`
+        CREATE TABLE IF NOT EXISTS pedido_pecas (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            pedido_id INTEGER NOT NULL,
+            equipamento_id INTEGER,
+            preco_indenizatorio_id INTEGER,
+            quantidade INTEGER DEFAULT 1,
+            isenta_plano_safe INTEGER DEFAULT 0,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (pedido_id) REFERENCES pedidos(id) ON DELETE CASCADE,
+            FOREIGN KEY (preco_indenizatorio_id) REFERENCES precos_indenizatorios(id)
+        )
+    `);
+
+    // Tabela de Solicitações do Comercial (Agrupamento dos pedidos de equipamentos)
+    await db.execute(`
+        CREATE TABLE IF NOT EXISTS pedido_solicitacoes (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            pedido_id INTEGER NOT NULL,
+            modelo TEXT NOT NULL,
+            quantidade INTEGER NOT NULL DEFAULT 1,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (pedido_id) REFERENCES pedidos(id) ON DELETE CASCADE
+        )
+    `);
+
+    // ====== NOVAS TABELAS FASE FINAL ======
+
+    // Tabela de Frequências do Cliente
+    await db.execute(`
+        CREATE TABLE IF NOT EXISTS cliente_frequencias (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            cliente_id INTEGER NOT NULL,
+            tx TEXT,
+            rx TEXT,
+            subtom_tx TEXT,
+            subtom_rx TEXT,
+            canal TEXT,
+            observacoes TEXT,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (cliente_id) REFERENCES clientes(id) ON DELETE CASCADE
+        )
+    `);
+
+    // Tabela de Chips POC
+    await db.execute(`
+        CREATE TABLE IF NOT EXISTS chips_poc (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            pedido_id INTEGER NOT NULL,
+            cliente_id INTEGER NOT NULL,
+            iccid TEXT NOT NULL,
+            linha TEXT,
+            operadora TEXT,
+            plano TEXT,
+            status TEXT DEFAULT 'Ativo', -- Ativo, Suspenso
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (pedido_id) REFERENCES pedidos(id) ON DELETE CASCADE,
+            FOREIGN KEY (cliente_id) REFERENCES clientes(id) ON DELETE CASCADE
+        )
+    `);
+
+    // Tabela de Contas a Pagar (Vinculadas ao Pedido)
+    await db.execute(`
+        CREATE TABLE IF NOT EXISTS contas_a_pagar (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            pedido_id INTEGER NOT NULL,
+            descricao TEXT NOT NULL,
+            tipo TEXT, -- Frete, Locacao Parceiro, Servico Terceiro, Outros
+            valor REAL NOT NULL,
+            vencimento DATE,
+            status TEXT DEFAULT 'Pendente', -- Pendente, Pago
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (pedido_id) REFERENCES pedidos(id) ON DELETE CASCADE
+        )
+    `);
+
+    // MIGRATIONS (Adicionar colunas se não existirem)
+    try { await db.execute("ALTER TABLE clientes ADD COLUMN plano_safe_ativo TEXT DEFAULT 'Não'"); } catch (e) { }
+    try { await db.execute("ALTER TABLE radios ADD COLUMN proprietario_tipo TEXT DEFAULT 'Próprio'"); } catch (e) { }
+    try { await db.execute("ALTER TABLE radios ADD COLUMN fornecedor_id INTEGER REFERENCES fornecedores(id)"); } catch (e) { }
+    try { await db.execute("ALTER TABLE radios ADD COLUMN nota_remessa TEXT"); } catch (e) { }
+
+    // Migrations para Dashboards Setoriais (Pedidos)
+    try { await db.execute("ALTER TABLE pedidos ADD COLUMN frete_valor REAL"); } catch (e) { }
+    try { await db.execute("ALTER TABLE pedidos ADD COLUMN transportadora TEXT"); } catch (e) { }
+    try { await db.execute("ALTER TABLE pedidos ADD COLUMN dados_frete TEXT"); } catch (e) { }
+    try { await db.execute("ALTER TABLE pedidos ADD COLUMN frete_status TEXT DEFAULT 'pendente'"); } catch (e) { }
+
+    // Migrations Finais Dashboards 
+    try { await db.execute("ALTER TABLE pedidos ADD COLUMN valor_acordado REAL"); } catch (e) { }
+    try { await db.execute("ALTER TABLE pedidos ADD COLUMN data_entrega DATETIME"); } catch (e) { }
+    try { await db.execute("ALTER TABLE pedidos ADD COLUMN tipo TEXT DEFAULT 'venda'"); } catch (e) { }
+
     // Seed default settings if not exists
     try {
         const proxySetting = await db.execute({ sql: "SELECT * FROM system_settings WHERE key = ?", args: ['proxy_url'] });
@@ -190,6 +354,24 @@ async function initializeDatabase() {
                 sql: "INSERT INTO system_settings (key, value, description) VALUES (?, ?, ?)",
                 args: ['proxy_url', '', 'URL do Proxy rotativo (ex: http://user:pass@host:port)']
             });
+        }
+
+        // SLA Padrão em horas (se não existir)
+        const slaSettings = [
+            { key: 'sla_logistica_horas', value: '24', desc: 'SLA Logística (Horas)' },
+            { key: 'sla_laboratorio_horas', value: '48', desc: 'SLA Laboratório (Horas)' },
+            { key: 'sla_financeiro_horas', value: '24', desc: 'SLA Financeiro (Horas)' },
+            { key: 'sla_consultor_horas', value: '72', desc: 'SLA Consultor Externo (Horas)' }
+        ];
+
+        for (const setting of slaSettings) {
+            const res = await db.execute({ sql: "SELECT * FROM system_settings WHERE key = ?", args: [setting.key] });
+            if (res.rows.length === 0) {
+                await db.execute({
+                    sql: "INSERT INTO system_settings (key, value, description) VALUES (?, ?, ?)",
+                    args: [setting.key, setting.value, setting.desc]
+                });
+            }
         }
     } catch (e) {
         // Ignorar erro se tabela ainda não existir na primeira execução ou erro de sintaxe

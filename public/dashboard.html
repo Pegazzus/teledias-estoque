@@ -31,6 +31,10 @@
                         <span class="nav-link-icon">📊</span>
                         Dashboard
                     </a>
+                    <a href="pedidos.html" class="nav-link">
+                        <span class="nav-link-icon">📋</span>
+                        Pedidos/Propostas
+                    </a>
                     <a href="radios.html" class="nav-link">
                         <img src="img/walkie-talkie.png" alt="Rádio"
                             style="width:20px;height:20px;margin-right:8px;vertical-align:middle">
@@ -275,7 +279,10 @@
 
                 tbody.innerHTML = movimentacoes.map(mov => `
                     <tr>
-                        <td><strong>${mov.radio_codigo}</strong></td>
+                        <td>
+                            <strong>${mov.radio_codigo}</strong>
+                            ${mov.radio_proprietario_tipo === 'Parceiro' ? '<span class="badge" style="background:#fffaf0; color:#dd6b20; border:1px solid #fbd38d; font-size:0.7rem; margin-left:8px; padding:2px 6px;" title="Equipamento de Parceiro">🤝 Parceiro</span>' : ''}
+                        </td>
                         <td>${tipoMap[mov.tipo] || mov.tipo}</td>
                         <td>${formatDate(mov.created_at)}</td>
                     </tr>

@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Preços Indenizatórios - Sistema de Estoque | Teledias Telecom</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+
+<body>
+    <div class="app-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <div class="sidebar-logo">
+                    <img src="img/logo.png" alt="Teledias" class="sidebar-logo-img" style="width: 50px; height: auto;">
+                    <div class="sidebar-logo-text">
+                        <h2>Teledias</h2>
+                        <span>Sistema de Estoque</span>
+                    </div>
+                </div>
+            </div>
+
+            <nav class="sidebar-nav">
+                <div class="nav-section">
+                    <div class="nav-section-title">Menu Principal</div>
+                    <a href="dashboard.html" class="nav-link">
+                        <span class="nav-link-icon">📊</span>
+                        Dashboard
+                    </a>
+                    <a href="pedidos.html" class="nav-link">
+                        <span class="nav-link-icon">📋</span>
+                        Pedidos/Propostas
+                    </a>
+                    <a href="radios.html" class="nav-link">
+                        <img src="img/walkie-talkie.png" alt="Rádio"
+                            style="width:20px;height:20px;margin-right:8px;vertical-align:middle">
+                        Rádios
+                    </a>
+                    <a href="clientes.html" class="nav-link">
+                        <span class="nav-link-icon">👥</span>
+                        Clientes
+                    </a>
+                    <a href="movimentacoes.html" class="nav-link">
+                        <span class="nav-link-icon">🔄</span>
+                        Movimentações
+                    </a>
+                </div>
+
+                <div class="nav-section admin-only">
+                    <div class="nav-section-title">Administração & Gestão</div>
+                    <a href="usuarios.html" class="nav-link">
+                        <span class="nav-link-icon">👤</span>
+                        Usuários
+                    </a>
+                    <a href="precos.html" class="nav-link active">
+                        <span class="nav-link-icon">💲</span>
+                        Tabela de Preços
+                    </a>
+                </div>
+            </nav>
+
+            <div class="sidebar-footer">
+                <div class="user-info">
+                    <div class="user-avatar" id="userAvatar">U</div>
+                    <div class="user-details">
+                        <div class="user-name" id="userNameDisplay">Usuário</div>
+                        <div class="user-role" id="userRoleDisplay">Função</div>
+                    </div>
+                    <button class="btn-logout" onclick="logout()" title="Sair">🚪</button>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <header class="header">
+                <div class="header-title">
+                    <h1>Tabela de Preços Indenizatórios</h1>
+                </div>
+                <div class="header-actions">
+                    <button class="btn btn-primary" onclick="openPrecoModal()">+ Cadastrar Componente</button>
+                </div>
+            </header>
+
+            <div class="page-content">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Preços Cadastrados</h3>
+                    </div>
+
+                    <!-- Filter Bar -->
+                    <div
+                        style="padding: 16px 20px; background: var(--gray-50); border-bottom: 1px solid var(--gray-200); display: flex; gap: 12px; flex-wrap: wrap; align-items: flex-end;">
+                        <div style="display:flex; flex-direction:column; gap:4px;">
+                            <label
+                                style="font-size:11px; font-weight:600; color:var(--gray-500); text-transform:uppercase;">🔍
+                                Modelo</label>
+                            <input type="text" id="filterModelo" class="form-control" placeholder="Buscar modelo..."
+                                oninput="debounceLoad()" style="width: 200px; font-size: 13px;">
+                        </div>
+                        <button onclick="clearFilters()" class="btn btn-secondary"
+                            style="font-size: 13px; padding: 6px 14px; height:34px;">Limpar</button>
+                    </div>
+
+                    <div class="card-body">
+                        <div class="table-container">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Modelo</th>
+                                        <th>Componente</th>
+                                        <th>Valor Base (R$)</th>
+                                        <th>Valor Mão de Obra (R$)</th>
+                                        <th>Total (R$)</th>
+                                        <th style="width: 100px;">Ações</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="precosTableBody">
+                                    <tr>
+                                        <td colspan="6">
+                                            <div class="empty-state">Carregando...</div>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Modal Preco -->
+    <div id="precoModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title" id="modalTitle">Cadastrar Componente</h2>
+                <button class="modal-close" onclick="closePrecoModal()">✕</button>
+            </div>
+            <form id="precoForm" onsubmit="savePreco(event)">
+                <input type="hidden" id="precoId">
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="modelo_equipamento">Modelo do Equipamento *</label>
+                        <input type="text" id="modelo_equipamento" class="form-control" required
+                            placeholder="Ex: Motorola EP450">
+                        <small style="color:var(--gray-500); font-size:12px;">Preenchimento exato ao modelo do
+                            Rádio</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="componente">Nome do Componente *</label>
+                        <input type="text" id="componente" class="form-control" required
+                            placeholder="Ex: Antena UHF / Bateria / Knob">
+                    </div>
+
+                    <div style="display:flex; gap:16px;">
+                        <div class="form-group" style="flex:1;">
+                            <label for="valor_base">Valor Base (R$) *</label>
+                            <input type="number" id="valor_base" class="form-control" step="0.01" min="0" required
+                                placeholder="0.00">
+                        </div>
+                        <div class="form-group" style="flex:1;">
+                            <label for="valor_mao_de_obra">Valor Mão de Obra (R$) *</label>
+                            <input type="number" id="valor_mao_de_obra" class="form-control" step="0.01" min="0"
+                                required placeholder="0.00">
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="closePrecoModal()">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Salvar Preço</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="js/auth.js"></script>
+    <script>
+        if (!requireAuth()) throw new Error('Não autenticado');
+        initUserInfo();
+        setActiveNav();
+
+        // Extra verification: kick out if not admin (redundant to active-nav hiding, but secure)
+        const user = JSON.parse(localStorage.getItem('user'));
+        if (user.cargo !== 'admin') {
+            alert('Acesso negado. Apenas gestores podem acessar a Tabela de Preços.');
+            window.location.href = 'dashboard.html';
+        }
+
+        let precosData = [];
+        let debounceTimer = null;
+
+        function debounceLoad() {
+            clearTimeout(debounceTimer);
+            debounceTimer = setTimeout(loadPrecos, 400);
+        }
+
+        function clearFilters() {
+            document.getElementById('filterModelo').value = '';
+            loadPrecos();
+        }
+
+        async function loadPrecos() {
+            try {
+                const modelo = document.getElementById('filterModelo').value.trim();
+                let url = '/api/precos';
+                if (modelo) {
+                    url += `?modelo=${encodeURIComponent(modelo)}`;
+                }
+
+                const response = await fetchApi(url);
+                precosData = await response.json();
+
+                const tbody = document.getElementById('precosTableBody');
+
+                if (precosData.length === 0) {
+                    tbody.innerHTML = `
+                        <tr>
+                            <td colspan="6">
+                                <div class="empty-state">
+                                    <div class="empty-icon">💲</div>
+                                    <p>Nenhum preço indenizatório cadastrado.</p>
+                                </div>
+                            </td>
+                        </tr>
+                    `;
+                    return;
+                }
+
+                tbody.innerHTML = precosData.map(p => {
+                    const valBase = Number(p.valor_base) || 0;
+                    const valMo = Number(p.valor_mao_de_obra) || 0;
+                    const total = valBase + valMo;
+
+                    return `
+                        <tr>
+                            <td><strong>${p.modelo_equipamento}</strong></td>
+                            <td>${p.componente}</td>
+                            <td>R$ ${valBase.toFixed(2).replace('.', ',')}</td>
+                            <td>R$ ${valMo.toFixed(2).replace('.', ',')}</td>
+                            <td style="color:var(--primary-600); font-weight:bold;">R$ ${total.toFixed(2).replace('.', ',')}</td>
+                            <td>
+                                <div class="action-buttons">
+                                    <button class="btn-icon" onclick="editPreco(${p.id})" title="Editar">✏️</button>
+                                    <button class="btn-icon" onclick="deletePreco(${p.id})" title="Excluir" style="color:var(--danger)">🗑️</button>
+                                </div>
+                            </td>
+                        </tr>
+                    `;
+                }).join('');
+            } catch (error) {
+                console.error('Erro ao carregar preços:', error);
+                showToast('Erro ao carregar preços', 'error');
+            }
+        }
+
+        function openPrecoModal(preco = null) {
+            const modal = document.getElementById('precoModal');
+            const form = document.getElementById('precoForm');
+            const title = document.getElementById('modalTitle');
+
+            form.reset();
+
+            if (preco) {
+                title.textContent = 'Editar Componente';
+                document.getElementById('precoId').value = preco.id;
+                document.getElementById('modelo_equipamento').value = preco.modelo_equipamento;
+                document.getElementById('componente').value = preco.componente;
+                document.getElementById('valor_base').value = preco.valor_base;
+                document.getElementById('valor_mao_de_obra').value = preco.valor_mao_de_obra;
+            } else {
+                title.textContent = 'Cadastrar Componente';
+                document.getElementById('precoId').value = '';
+            }
+
+            modal.style.display = 'flex';
+        }
+
+        function closePrecoModal() {
+            document.getElementById('precoModal').style.display = 'none';
+        }
+
+        function editPreco(id) {
+            const preco = precosData.find(p => p.id === id);
+            if (preco) openPrecoModal(preco);
+        }
+
+        async function savePreco(e) {
+            e.preventDefault();
+
+            const id = document.getElementById('precoId').value;
+            const data = {
+                modelo_equipamento: document.getElementById('modelo_equipamento').value.trim(),
+                componente: document.getElementById('componente').value.trim(),
+                valor_base: parseFloat(document.getElementById('valor_base').value) || 0,
+                valor_mao_de_obra: parseFloat(document.getElementById('valor_mao_de_obra').value) || 0
+            };
+
+            try {
+                const url = id ? `/api/precos/${id}` : '/api/precos';
+                const method = id ? 'PUT' : 'POST';
+
+                const response = await fetchApi(url, {
+                    method,
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+
+                if (response.ok) {
+                    showToast(`Componente ${id ? 'atualizado' : 'cadastrado'} com sucesso`, 'success');
+                    closePrecoModal();
+                    loadPrecos();
+                } else {
+                    const err = await response.json();
+                    showToast(err.error || 'Erro ao salvar o preço', 'error');
+                }
+            } catch (error) {
+                console.error('Erro ao salvar preço:', error);
+                showToast('Erro de conexão', 'error');
+            }
+        }
+
+        async function deletePreco(id) {
+            if (!confirm('Tem certeza que deseja excluir permanentemente este componente da tabela de preços?')) return;
+
+            try {
+                const response = await fetchApi(`/api/precos/${id}`, { method: 'DELETE' });
+
+                if (response.ok) {
+                    showToast('Componente excluído com sucesso', 'success');
+                    loadPrecos();
+                } else {
+                    const err = await response.json();
+                    showToast(err.error || 'Erro ao excluir componente', 'error');
+                }
+            } catch (error) {
+                console.error('Erro ao excluir:', error);
+                showToast('Erro de conexão', 'error');
+            }
+        }
+
+        // Close modal when clicking outside
+        window.onclick = function (event) {
+            const modal = document.getElementById('precoModal');
+            if (event.target === modal) {
+                closePrecoModal();
+            }
+        }
+
+        // Init
+        loadPrecos();
+    </script>
+</body>
+
+</html>

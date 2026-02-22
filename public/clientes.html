@@ -114,6 +114,7 @@
                                         <th>CNPJ/CPF</th>
                                         <th>Telefone</th>
                                         <th>Email</th>
+                                        <th>Plano Safe</th>
                                         <th>Rádios</th>
                                         <th>Ações</th>
                                     </tr>
@@ -162,6 +163,15 @@
                     <div class="form-group">
                         <label class="form-label">Email</label>
                         <input type="email" id="email" class="form-control" placeholder="email@exemplo.com">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Plano Safe Ativo *</label>
+                        <select id="plano_safe_ativo" class="form-control">
+                            <option value="Não">Não</option>
+                            <option value="Sim">Sim</option>
+                        </select>
+                        <small style="color:var(--gray-500); margin-top:4px; display:block;">Se ativo, isenta custos de
+                            peças no Laboratório Técnico.</small>
                     </div>
                     <div class="form-group">
                         <label class="form-label">Endereço</label>
@@ -231,6 +241,7 @@
                         <td>${cliente.cnpj_cpf || '-'}</td>
                         <td>${cliente.telefone || '-'}</td>
                         <td>${cliente.email || '-'}</td>
+                        <td>${cliente.plano_safe_ativo === 'Sim' ? '<span class="badge" style="background:#e6fffa; color:#234e52; border:1px solid #81e6d9;">🛡️ Sim</span>' : '<span style="color:var(--gray-500)">Não</span>'}</td>
                         <td>
                             <button class="btn btn-outline btn-sm" onclick="verDetalhes(${cliente.id})">
                                 Ver rádios
@@ -265,6 +276,7 @@
                 loadClienteData(id);
             } else {
                 title.textContent = 'Novo Cliente';
+                document.getElementById('plano_safe_ativo').value = 'Não';
             }
 
             modal.classList.add('active');
@@ -284,6 +296,7 @@
                 document.getElementById('cnpj_cpf').value = cliente.cnpj_cpf || '';
                 document.getElementById('telefone').value = cliente.telefone || '';
                 document.getElementById('email').value = cliente.email || '';
+                document.getElementById('plano_safe_ativo').value = cliente.plano_safe_ativo || 'Não';
                 document.getElementById('endereco').value = cliente.endereco || '';
             } catch (error) {
                 showToast('Erro ao carregar dados do cliente', 'error');
@@ -297,6 +310,7 @@
                 cnpj_cpf: document.getElementById('cnpj_cpf').value,
                 telefone: document.getElementById('telefone').value,
                 email: document.getElementById('email').value,
+                plano_safe_ativo: document.getElementById('plano_safe_ativo').value,
                 endereco: document.getElementById('endereco').value
             };
 

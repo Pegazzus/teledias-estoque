@@ -232,6 +232,7 @@
                                         <th>Modelo</th>
                                         <th>Marca</th>
                                         <th>Nº Série</th>
+                                        <th>Origem</th>
                                         <th>Status</th>
                                         <th>Cliente</th>
                                         <th>Ações</th>
@@ -296,6 +297,31 @@
                             <input type="text" id="numero_serie" class="form-control" placeholder="Ex: SN123456">
                         </div>
                     </div>
+
+                    <div class="form-row">
+                        <div class="form-group" style="flex:1;">
+                            <label class="form-label">Origem do Equipamento *</label>
+                            <select id="proprietario_tipo" class="form-control" onchange="toggleOrigemFields()">
+                                <option value="Próprio">Próprio (Teledias)</option>
+                                <option value="Parceiro">Parceiro (Sublocação)</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-row" id="origemFields"
+                        style="display:none; background: #fffaf0; padding:12px; border-radius:6px; margin-bottom:15px; border:1px solid #fbd38d;">
+                        <div class="form-group">
+                            <label class="form-label">Fornecedor *</label>
+                            <select id="fornecedor_id" class="form-control">
+                                <option value="">Carregando...</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Nota de Remessa / Link *</label>
+                            <input type="text" id="nota_remessa" class="form-control"
+                                placeholder="Ex: NFE 12345 ou Link">
+                        </div>
+                    </div>
+
                     <div class="form-group">
                         <label class="form-label">Observações</label>
                         <textarea id="observacoes" class="form-control" rows="3"
@@ -358,6 +384,9 @@
         let clientes = [];
         let selectedRadios = new Set();
 
+        // Init loads
+        loadFornecedores();
+
         // Carregar rádios
         async function loadRadios() {
             try {
@@ -401,6 +430,7 @@
                         <td>${radio.modelo}</td>
                         <td>${radio.marca || '-'}</td>
                         <td>${radio.numero_serie || '-'}</td>
+                        <td>${getOrigemBadge(radio.proprietario_tipo, radio.fornecedor_nome, radio.nota_remessa)}</td>
                         <td>${getStatusBadge(radio.status)}</td>
                         <td>${radio.cliente_nome || '-'}</td>
                         <td>
@@ -584,6 +614,38 @@
             }
         }
 
+        async function loadFornecedores() {
+            try {
+                const response = await fetchApi('/api/fornecedores');
+                const fornecs = await response.json();
+                const select = document.getElementById('fornecedor_id');
+                select.innerHTML = '<option value="">Selecione um Fornecedor</option>' +
+                    fornecs.map(f => `<option value="${f.id}">${f.nome}</option>`).join('');
+            } catch (error) {
+                console.error('Erro ao carregar fornecedores:', error);
+            }
+        }
+
+        function toggleOrigemFields() {
+            const tipo = document.getElementById('proprietario_tipo').value;
+            const container = document.getElementById('origemFields');
+            if (tipo === 'Parceiro') {
+                container.style.display = 'flex';
+            } else {
+                container.style.display = 'none';
+                document.getElementById('fornecedor_id').value = '';
+                document.getElementById('nota_remessa').value = '';
+            }
+        }
+
+        function getOrigemBadge(tipo, fornecedor, nota) {
+            if (tipo === 'Parceiro') {
+                const title = `Fornecedor: ${fornecedor || 'N/A'}\nNota: ${nota || 'N/A'}`;
+                return `<span class="badge" style="background:#fffaf0; color:#dd6b20; border:1px solid #fbd38d; cursor:help;" title="${title}">🤝 Parceiro</span>`;
+            }
+            return `<span class="badge" style="background:var(--gray-100); color:var(--gray-600);">🏢 Próprio</span>`;
+        }
+
         // Modal de rádio
         function openModal(mode, id = null) {
             const modal = document.getElementById('radioModal');
@@ -598,6 +660,8 @@
                 loadRadioData(id);
             } else {
                 title.textContent = 'Novo Rádio';
+                document.getElementById('proprietario_tipo').value = 'Próprio';
+                toggleOrigemFields();
             }
 
             modal.classList.add('active');
@@ -618,6 +682,13 @@
                 document.getElementById('marca').value = radio.marca || '';
                 document.getElementById('numero_serie').value = radio.numero_serie || '';
                 document.getElementById('observacoes').value = radio.observacoes || '';
+
+                document.getElementById('proprietario_tipo').value = radio.proprietario_tipo || 'Próprio';
+                toggleOrigemFields();
+                if (radio.proprietario_tipo === 'Parceiro') {
+                    document.getElementById('fornecedor_id').value = radio.fornecedor_id || '';
+                    document.getElementById('nota_remessa').value = radio.nota_remessa || '';
+                }
             } catch (error) {
                 showToast('Erro ao carregar dados do rádio', 'error');
             }
@@ -625,12 +696,24 @@
 
         async function saveRadio() {
             const id = document.getElementById('radioId').value;
+            const proprietario_tipo = document.getElementById('proprietario_tipo').value;
+            const fornecedor_id = document.getElementById('fornecedor_id').value;
+            const nota_remessa = document.getElementById('nota_remessa').value;
+
+            if (proprietario_tipo === 'Parceiro' && (!fornecedor_id || !nota_remessa)) {
+                showToast('Fornecedor e Nota de Remessa são obrigatórios para origem "Parceiro"', 'warning');
+                return;
+            }
+
             const data = {
                 codigo: document.getElementById('codigo').value,
                 modelo: document.getElementById('modelo').value,
                 marca: document.getElementById('marca').value,
                 numero_serie: document.getElementById('numero_serie').value,
-                observacoes: document.getElementById('observacoes').value
+                observacoes: document.getElementById('observacoes').value,
+                proprietario_tipo,
+                fornecedor_id: fornecedor_id ? parseInt(fornecedor_id) : null,
+                nota_remessa
             };
 
             if (!data.codigo || !data.modelo) {
@@ -639,7 +722,7 @@
             }
 
             try {
-                const url = id ? `/api/radios/${id}` : '/api/radios';
+                const url = id ? `/ api / radios / ${id} ` : '/api/radios';
                 const method = id ? 'PUT' : 'POST';
 
                 const response = await fetchApi(url, {
@@ -664,7 +747,7 @@
             if (!confirm('Deseja realmente excluir este rádio?')) return;
 
             try {
-                const response = await fetchApi(`/api/radios/${id}`, { method: 'DELETE' });
+                const response = await fetchApi(`/ api / radios / ${id} `, { method: 'DELETE' });
 
                 if (!response.ok) {
                     const error = await response.json();
@@ -689,12 +772,12 @@
             document.getElementById('movObservacoes').value = '';
 
             if (tipo === 'saida') {
-                title.textContent = isMultiple ? `Saída em Lote (${radioIds.length} rádios)` : 'Registrar Saída para Cliente';
+                title.textContent = isMultiple ? `Saída em Lote(${radioIds.length} rádios)` : 'Registrar Saída para Cliente';
                 document.getElementById('clienteField').style.display = 'block';
                 document.getElementById('descricaoField').style.display = 'none';
                 document.getElementById('movSubmitBtn').className = 'btn btn-success';
             } else if (tipo === 'manutencao') {
-                title.textContent = isMultiple ? `Manutenção em Lote (${radioIds.length} rádios)` : 'Enviar para Manutenção';
+                title.textContent = isMultiple ? `Manutenção em Lote(${radioIds.length} rádios)` : 'Enviar para Manutenção';
                 document.getElementById('clienteField').style.display = 'none';
                 document.getElementById('descricaoField').style.display = 'block';
                 document.getElementById('movSubmitBtn').className = 'btn btn-warning';

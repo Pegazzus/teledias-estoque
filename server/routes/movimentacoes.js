@@ -13,7 +13,7 @@ router.get('/', async (req, res) => {
 
         let sql = `
             SELECT m.*, r.codigo as radio_codigo, r.modelo as radio_modelo,
-                   r.numero_serie as radio_numero_serie,
+                   r.numero_serie as radio_numero_serie, r.proprietario_tipo as radio_proprietario_tipo,
                    c.nome as cliente_nome, u.nome as usuario_nome
             FROM movimentacoes m
             LEFT JOIN radios r ON m.radio_id = r.id
