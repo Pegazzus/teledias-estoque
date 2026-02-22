@@ -284,6 +284,10 @@
                     <option value="venda_seminovos">♻️ Venda Seminovos</option>
                     <option value="manutencao_radios">🔧 Manutenção Rádios</option>
                     <option value="eventos">🎪 Eventos</option>
+                    <option value="cliente_fixo">🏢 Cliente Fixo</option>
+                    <option value="aditivo">➕ Aditivo</option>
+                    <option value="cancelamento">❌ Cancelamento</option>
+                    <option value="chamado_tecnico">📞 Chamado Técnico</option>
                 </select>
             </div>
 
@@ -1142,7 +1146,7 @@
             }
 
             // Tipo Badge
-            const tipoLabels = { 'venda': '📦 VENDA', 'venda_seminovos': '♻️ SEMINOVOS', 'manutencao_radios': '🔧 MANUTENÇÃO', 'eventos': '🎪 EVENTO' };
+            const tipoLabels = { 'venda': '📦 VENDA', 'venda_seminovos': '♻️ SEMINOVOS', 'manutencao_radios': '🔧 MANUTENÇÃO', 'eventos': '🎪 EVENTO', 'cliente_fixo': '🏢 FIXO', 'aditivo': '➕ ADITIVO', 'cancelamento': '❌ CANCELAMENTO', 'chamado_tecnico': '📞 CHAMADO' };
             let tipoBadge = document.getElementById('panelTipoBadge');
             if (!tipoBadge) {
                 tipoBadge = document.createElement('span');

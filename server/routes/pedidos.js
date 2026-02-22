@@ -9,7 +9,7 @@ router.use(authMiddleware);
 // Helpers
 const FASES = ['comercial', 'logistica', 'laboratorio', 'consultor_externo', 'financeiro', 'controle_qualidade', 'concluido'];
 
-const TIPOS_PEDIDO = ['venda', 'venda_seminovos', 'manutencao_radios', 'eventos'];
+const TIPOS_PEDIDO = ['venda', 'venda_seminovos', 'manutencao_radios', 'eventos', 'cliente_fixo', 'aditivo', 'cancelamento', 'chamado_tecnico'];
 
 const CHECKLISTS_POR_TIPO = {
     'venda': {
@@ -166,6 +166,150 @@ const CHECKLISTS_POR_TIPO = {
             'Conferência final: Material enviado x devolvido x contrato',
             'Verificar emissão da Nota de Remessa e Fatura',
             'Verificar se OS e Laudo de Indenização foram finalizados'
+        ]
+    },
+    'cliente_fixo': {
+        'comercial': [
+            'Validação cadastral completa e consulta de disponibilidade de estoque',
+            'Definir frequência a ser utilizada e informar proposta aprovada no card',
+            'Confecção de Contrato (Indeterminado)',
+            'Boas-vindas: Enviar vídeo de agradecimento e informar canal de suporte'
+        ],
+        'logistica': [
+            'Separação e alimentação de estoque (Próprio ou Relocação)',
+            'Cotação de frete (peso/medidas) e enviar valores ao Financeiro',
+            'Dar retorno ao cliente sobre preferência de Clip ou Estojo',
+            '[RELOCAÇÃO] Identificar e separar material do Parceiro (Scanner/Bipagem)',
+            '[RELOCAÇÃO] Fotografar números de série e salvar NF de Remessa do fornecedor no card',
+            '[RELOCAÇÃO] Diferenciar estoque "Nosso" vs "Parceiro"'
+        ],
+        'laboratorio': [
+            'Ativação de Chips POC (se houver)',
+            'Programação completa (incluindo senha e bloqueio de canal ocupado)',
+            'Inclusão de frequência no Multidados',
+            '[RELOCAÇÃO] Gestão de chips POC de parceiros (Arquia/André)'
+        ],
+        'consultor_externo': [
+            'Entrega técnica: Ensinar carregamento correto e cuidados com o equipamento',
+            'Informar na OS qual acessório ficou com o cliente (Clip ou Estojo)',
+            'Checklist de atendimento especial (Enauta/Brasil Forte)'
+        ],
+        'financeiro': [
+            'Emitir Nota de Remessa para saída do material',
+            'Criar Contrato no Orçamento (Garantir Pro-Rata manual se card batido após entrega)',
+            'Ajustes Contrato: Código 2911, Indeterminado, Faturamento dia 01, Índice IGPM/IPCA',
+            'Lançar fretes e backups de chips no Contas a Pagar',
+            '[RELOCAÇÃO] Salvar NF de Remessa do fornecedor e lançar mensalidade do parceiro',
+            '[RELOCAÇÃO] Atualizar backup com custos de relocação para cálculo de margem'
+        ],
+        'controle_qualidade': [
+            'Conferência final: Proposta x Contrato x Entrega',
+            'Verificar emissão de Nota de Remessa e Contrato ativo',
+            'Verificar se OS de entrega foi assinada'
+        ]
+    },
+    'aditivo': {
+        'comercial': [
+            'Verificar pendência financeira do cliente antes de prosseguir',
+            'Aditivo de rádios deve ir com Tabela Indenizatória anexa',
+            'Definir logística: Transportadora ou Cliente retira?'
+        ],
+        'logistica': [
+            'Separação e envio do material adicional (similar a Cliente Fixo)',
+            'Atenção ao retorno de itens trocados (se for troca de modelo)',
+            '[RELOCAÇÃO] Identificar e separar material do Parceiro (Scanner/Bipagem)',
+            '[RELOCAÇÃO] Fotografar números de série e salvar NF de Remessa do fornecedor no card',
+            '[RELOCAÇÃO] Diferenciar estoque "Nosso" vs "Parceiro"'
+        ],
+        'laboratorio': [
+            'Programação dos equipamentos adicionais seguindo padrão do contrato existente',
+            'Testes completos antes do envio',
+            '[RELOCAÇÃO] Gestão de chips POC de parceiros (Arquia/André)'
+        ],
+        'consultor_externo': [
+            'Entrega técnica seguindo padrão de Cliente Fixo',
+            'Atualizar OS com os novos itens entregues (modelos e seriais)'
+        ],
+        'financeiro': [
+            'Criar contrato do aditivo para cobrança Pro-Rata',
+            'Ajuste de itens a mais: Retirar clip/estojo excedente ou emitir nota de retorno',
+            'Atualizar locais/postos de cobrança no sistema',
+            '[RELOCAÇÃO] Salvar NF de Remessa do fornecedor e lançar mensalidade do parceiro',
+            '[RELOCAÇÃO] Atualizar backup com custos de relocação para cálculo de margem'
+        ],
+        'controle_qualidade': [
+            'Conferência final: Aditivo x Contrato original x Entrega',
+            'Verificar atualização do contrato com novos itens',
+            'Verificar se OS foi assinada com itens adicionais'
+        ]
+    },
+    'cancelamento': {
+        'comercial': [
+            'Pedir formalização do cancelamento por e-mail e Nota de Devolução',
+            'Alinhar retirada: Transportadora ou Cliente posta?',
+            'Retirar cliente do "Mãe de Todos" e avisar Aviso Prévio ao Financeiro'
+        ],
+        'logistica': [
+            'Cotar retirada com transportadora e lançar código de rastreio',
+            'Receber devolução e transferir para Estoque de Manutenção (Análise)',
+            'Processo de Separação de Indenização (se houver danos no material)',
+            '[RELOCAÇÃO] Identificar material do Parceiro devolvido (Scanner/Bipagem)',
+            '[RELOCAÇÃO] Fotografar números de série e preparar devolução ao fornecedor'
+        ],
+        'laboratorio': [
+            'Suspender Chips POC e remover acesso PTT Manager',
+            'Análise de Indenização: Taxa de limpeza e laudo de danos com fotos',
+            'Guardar material indenizado na sucata por 30 dias',
+            '[RELOCAÇÃO] Gestão de chips POC de parceiros — devolver ao fornecedor'
+        ],
+        'consultor_externo': [
+            'OS de Retirada: Relatar que material vai para análise em bancada',
+            'Checklist de encerramento com conferência de itens devolvidos'
+        ],
+        'financeiro': [
+            'Responder e-mail detalhando cobranças (Pro-Rata, Aviso Prévio, Indenização)',
+            'Baixar contrato no sistema após confirmação de retorno do material',
+            'Emitir boletos finais e Notas de Débito/Ressarcimento conforme laudo',
+            '[RELOCAÇÃO] Devolver NF de Remessa ao fornecedor e encerrar mensalidade do parceiro'
+        ],
+        'controle_qualidade': [
+            'Conferência final: Material devolvido x Contrato x Laudo de Indenização',
+            'Verificar baixa do contrato no sistema',
+            'Verificar emissão de boletos finais e notas de encerramento'
+        ]
+    },
+    'chamado_tecnico': {
+        'comercial': [
+            'Verificar pendência financeira do cliente',
+            'POC: Tentar resolução remota (conexão/chip) antes de agendar visita',
+            'Criar proposta de troca ou preventiva'
+        ],
+        'logistica': [
+            'Separação de material de backup/troca',
+            'Retorno de material defeituoso: Receber, conferir e enviar para Análise de Indenização',
+            '[RELOCAÇÃO] Identificar se material defeituoso é do Parceiro (Scanner/Bipagem)',
+            '[RELOCAÇÃO] Fotografar números de série e notificar fornecedor'
+        ],
+        'laboratorio': [
+            'Avaliar material retornado e emitir Laudo para Indenização',
+            'Programação e testes de equipamentos de troca/backup',
+            '[RELOCAÇÃO] Gestão de chips POC de parceiros — notificar troca'
+        ],
+        'consultor_externo': [
+            'Levantamento de itens defeituosos no local do cliente',
+            'Substituir equipamento e mostrar avarias ao cliente (mau uso?)',
+            'Preventiva: Limpeza e testes de botões/baterias no local'
+        ],
+        'financeiro': [
+            'Emitir Nota de Remessa da troca',
+            'Nota de Retorno do material defeituoso',
+            'Cobrança de Indenização se laudo apontar mau uso (sem isenção Safe)',
+            '[RELOCAÇÃO] Notificar fornecedor sobre troca e atualizar Contas a Pagar'
+        ],
+        'controle_qualidade': [
+            'Conferência final: Material trocado x Laudo x OS de campo',
+            'Verificar emissão de Notas (Remessa + Retorno)',
+            'Verificar se laudo de indenização foi concluído (se aplicável)'
         ]
     }
 };
