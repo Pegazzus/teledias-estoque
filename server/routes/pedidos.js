@@ -9,7 +9,7 @@ router.use(authMiddleware);
 // Helpers
 const FASES = ['comercial', 'logistica', 'laboratorio', 'consultor_externo', 'financeiro', 'controle_qualidade', 'concluido'];
 
-const TIPOS_PEDIDO = ['venda', 'venda_seminovos', 'manutencao_radios'];
+const TIPOS_PEDIDO = ['venda', 'venda_seminovos', 'manutencao_radios', 'eventos'];
 
 const CHECKLISTS_POR_TIPO = {
     'venda': {
@@ -128,6 +128,44 @@ const CHECKLISTS_POR_TIPO = {
             'Conferência final: Laudo x Proposta x Orçamento com componentes',
             'Verificar emissão das Notas Fiscais (Produtos + Serviços)',
             'Verificar se OS de entrega/devolução foi assinada pelo cliente'
+        ]
+    },
+    'eventos': {
+        'comercial': [
+            'Validação cadastral completa da empresa (CNPJ, CCC, Protesto)',
+            'Verificar necessidade de acessórios (Lapela) e programação anexada',
+            'Alimentar valores de Tabela Indenizatória no produto',
+            'Definir frequência a ser utilizada (Nossa ou do Cliente)',
+            'Contrato: Oferecer Upgrade após assinatura'
+        ],
+        'logistica': [
+            'Separação em massa: Enviar lapelas e baterias a mais (reserva)',
+            'Verificar necessidade de régua de tomadas para o evento',
+            'Alimentar contrato de locação e registrar Saída de Estoque',
+            'Tirar FOTO das baterias carregadas na base antes do envio',
+            'Retorno: Cotar coleta com transportadora',
+            'Retorno: Conferir material devolvido e separar para Análise de Indenização'
+        ],
+        'laboratorio': [
+            'Programação e testes — Validar 100% das baterias',
+            'Rádios POC: Verificar consumo de dados e bloquear chip após o evento',
+            'Análise de Indenização no retorno: Laudo técnico com fotos dos danos'
+        ],
+        'consultor_externo': [
+            'Contagem rigorosa na frente do cliente (Entrega e Retirada)',
+            'OS detalhada com números de série e assinatura do cliente',
+            'Treinamento rápido de uso dos equipamentos no local do evento'
+        ],
+        'financeiro': [
+            'Emitir Nota de Remessa para saída do material',
+            'Contrato: Certificar que está como "Determinado" (não recorrente)',
+            'Faturamento: Verificar se é antecipado ou pós-evento',
+            'Indenizações: Enviar e-mail com Laudo, Foto, Boleto e NF de Ressarcimento (se houver danos)'
+        ],
+        'controle_qualidade': [
+            'Conferência final: Material enviado x devolvido x contrato',
+            'Verificar emissão da Nota de Remessa e Fatura',
+            'Verificar se OS e Laudo de Indenização foram finalizados'
         ]
     }
 };
